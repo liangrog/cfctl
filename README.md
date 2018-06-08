@@ -1,6 +1,6 @@
 cfctl
 ===
-AWS Cloudformation DevOp tool
+AWS CloudFormation DevOp tool
 
 Design Principles & Requirements
 ---
@@ -11,3 +11,8 @@ Design Principles & Requirements
 5. Unit tested all components
 6. Providing three levels stack management such as module -> stack -> master stack
 7. Providing parameter scoping
+
+
+Trello Board
+---
+[github-cfctl](https://trello.com/b/3etT9edo/github-cfctl)
