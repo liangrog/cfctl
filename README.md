@@ -28,7 +28,7 @@ Provide facility that can apply the same CloudFormation or changes to multple re
 ### Folder structure
 ```  
   - project
-    |- **modules**
+    |- modules
        |- templateA.yaml
        |- templateB.yaml
        |- folderA
@@ -37,7 +37,7 @@ Provide facility that can apply the same CloudFormation or changes to multple re
        |- folderB
           |- templateE.yaml
           ...
-    |- **stacks**
+    |- stacks
        |- global.yaml
        |- stackA
           |- params.yaml
