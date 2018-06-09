@@ -26,7 +26,7 @@ All components must be unit tested
 Provide facility that can apply the same CloudFormation or changes to multple regions in one command
 
 ### Folder structure
-  
+```  
   - project
     |- **modules**
        |- templateA.yaml
@@ -42,7 +42,7 @@ Provide facility that can apply the same CloudFormation or changes to multple re
        |- stackA
           |- params.yaml
           |- config.yaml
-
+```
 ### global.yaml
 
 ### config.yaml
