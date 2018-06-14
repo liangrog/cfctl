@@ -74,15 +74,15 @@ This is the directory for cfctl management.
 
 ### Commands
 1. AWS Profile
-
+```
   $ cfctl profile create
   
   $ cfctl profile update
   
   $ cfctl profile delete
-  
+```  
 2. CloudFormation
-
+```
   $ cfctl stack create
   
   $ cfctl stack update
@@ -96,7 +96,7 @@ This is the directory for cfctl management.
   $ cfctl stack list
   
   $ cfctl stack get
-  
+```  
 ### Flags
 
 Global
