@@ -25,6 +25,12 @@ All components must be unit tested
 ### Support multi-region deployments
 Provide facility that can apply the same CloudFormation or changes to multple regions in one command
 
+### AWS profile management
+- Allow using environment variable
+- Allow using profile
+- Handle MFA
+- Ordering: ENV > profile
+
 ### Folder structure
 ```  
   - project
