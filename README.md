@@ -16,8 +16,10 @@ AWS CloudFormation DevOp tool
 Multiple sources for one parameter is allow
 
 ### Providing parameter scoping
-By default, parent parameter will be overriden by children parameter.
-If given `--override` flag, parent parameter override children parameter.
+By default, parent stack parameters override children stack parameters.
+Command line parameters overrides any parameters given in the files.
+
+For environment parameter values such as development, staging, production, end users should use `--parameters` flag to provide values that specific to the environment or use `--env` flag to specify the value file for the environment.
 
 ### Unit tested all components
 All components must be unit tested
@@ -27,9 +29,10 @@ Provide facility that can apply the same CloudFormation or changes to multple re
 
 ### AWS profile management
 - Allow using environment variable
-- Allow using profile
+- Allow using AWS profile
 - Handle MFA
-- Ordering: ENV > profile
+- Allow profile configured in cfctl without the needs to install awscli
+- Ordering: ENV > profile > cfctl configuration
 
 ### Folder structure
 ```  
@@ -44,17 +47,65 @@ Provide facility that can apply the same CloudFormation or changes to multple re
           |- templateE.yaml
           ...
     |- stacks
-       |- global.yaml
        |- stackA
           |- params.yaml
+          |- package.yaml
+          |- config.yaml
+       |- stackB
+          |- params.yaml
+          |- package.yaml
           |- config.yaml
 ```
-### global.yaml
 
 ### config.yaml
+The is the configurations file sets default values for cfctl
+
+### params.yaml
+This file contains all stack specific default parameter-value pairs
+
+### package.yaml
+This is the dependancy management file.
+
+- This file does not track package versions
+- Package must be local to the project at this stage. Inter-repo packaging will be considered in the future when there are enough user demands.
+
+### ~/.cfctl/
+This is the directory for cfctl management.
 
 ### Commands
+1. AWS Profile
+
+  $ cfctl profile create
   
+  $ cfctl profile update
+  
+  $ cfctl profile delete
+  
+2. CloudFormation
+
+  $ cfctl stack create
+  
+  $ cfctl stack update
+  
+  $ cfctl stack delete
+  
+  $ cfctl stack output
+  
+  $ cfctl stack validate
+  
+  $ cfctl stack list
+  
+  $ cfctl stack get
+  
+### Flags
+
+Global
+```
+  --profile 
+  --region
+```
+
+
 Trello Board
 ---
 [github-cfctl](https://trello.com/b/3etT9edo/github-cfctl)
