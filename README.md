@@ -34,6 +34,14 @@ Provide facility that can apply the same CloudFormation or changes to multple re
 - Allow profile configured in cfctl without the needs to install awscli
 - Ordering: ENV > profile > cfctl configuration
 
+Load order:
+<1> cfctl credential provider
+<2> env crednetial provider
+<3> shared credential provider
+<4> remote credential provider (ec2 or ec2 roles)
+
+<2> to <4> are provided by AWS SDK default chained credential provider
+
 ### Folder structure
 ```  
   - project
