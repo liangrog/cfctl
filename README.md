@@ -44,22 +44,26 @@ Load order:
 
 ### Folder structure
 ```  
-  - project
+  - Your Git Repo
+    |- templates
+        |- ec2-general.yaml
+        |- ec2-kubernetes.yaml
+        |- s3-encrypted.yaml
+        ...
     |- modules
-       |- templateA.yaml
-       |- templateB.yaml
-       |- folderA
-       |- templateC.yaml
-       |- templateD.yaml
-       |- folderB
-          |- templateE.yaml
-          ...
-    |- stacks
-       |- stackA
+       |- jump-host.yaml
+       |- web-server.yaml
+        ...
+    |- project
+       |- rocket-man
+          |- env
+              |- dev.yaml
+              |- stage.yaml
+              |- prod.yaml
           |- params.yaml
-          |- package.yaml
+          |- packages.yaml
           |- config.yaml
-       |- stackB
+       |- super-woman
           |- params.yaml
           |- package.yaml
           |- config.yaml
