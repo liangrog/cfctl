@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 
@@ -17,8 +18,7 @@ const (
 	// Environment variable names
 	// https proxy. This allows using
 	// https proxy other than bash's http proxy
-	ENV_HTTPS_PROXY_CAP = "CF_HTTPS_PROXY"
-	ENV_HTTPS_PROXY_LOW = "cf_https_proxy"
+	ENV_HTTPS_PROXY = "CF_HTTPS_PROXY"
 )
 
 var (
@@ -60,13 +60,13 @@ func GetHttpClient() *http.Client {
 func getHTTPSProxy() string {
 	var proxyStr string
 
-	if len(os.Getenv(ENV_HTTPS_PROXY_CAP)) > 0 {
-		proxyStr = os.Getenv(ENV_HTTPS_PROXY_CAP)
+	if len(os.Getenv(ENV_HTTPS_PROXY)) > 0 {
+		proxyStr = os.Getenv(ENV_HTTPS_PROXY)
 	}
 
 	// Override capital variable if set
-	if len(os.Getenv(ENV_HTTPS_PROXY_LOW)) > 0 {
-		proxyStr = os.Getenv(ENV_HTTPS_PROXY_LOW)
+	if len(os.Getenv(strings.ToLower(ENV_HTTPS_PROXY))) > 0 {
+		proxyStr = os.Getenv(strings.ToLower(ENV_HTTPS_PROXY))
 	}
 
 	return proxyStr

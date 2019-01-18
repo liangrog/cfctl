@@ -3,6 +3,7 @@ package aws
 import (
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,7 +21,7 @@ func TestGetHttpClient(t *testing.T) {
 
 	// With proxy
 	proxy := "https://127.0.0.2:3128"
-	os.Setenv(ENV_HTTPS_PROXY_LOW, proxy)
+	os.Setenv(ENV_HTTPS_PROXY, proxy)
 	//Make sure proxy condition is triggered
 	assert.Equal(t, proxy, getHTTPSProxy())
 	assert.IsType(t, new(http.Client), GetHttpClient())
@@ -41,8 +42,8 @@ func TestGetHTTPSProxy(t *testing.T) {
 	}
 
 	for _, d := range testData {
-		os.Setenv(ENV_HTTPS_PROXY_CAP, d.cap_val)
-		os.Setenv(ENV_HTTPS_PROXY_LOW, d.low_val)
+		os.Setenv(ENV_HTTPS_PROXY, d.cap_val)
+		os.Setenv(strings.ToLower(ENV_HTTPS_PROXY), d.low_val)
 		assert.Equal(t, d.expected, getHTTPSProxy())
 	}
 }
