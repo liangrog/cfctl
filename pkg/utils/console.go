@@ -37,7 +37,7 @@ func StdoutStrFactory(format string) StdoutStrFn {
 // Print given interface to given format
 func Print(format string, s ...interface{}) error {
 	if len(s) == 0 {
-		return errors.New("Printing output error: No object given")
+		return errors.New(MsgFormat("Printing output error: No object given"))
 	}
 
 	fn := StdoutStrFactory(format)
@@ -51,4 +51,9 @@ func Print(format string, s ...interface{}) error {
 	}
 
 	return nil
+}
+
+// Format error message
+func MsgFormat(msg string, options ...string) string {
+	return fmt.Sprintf("%s", msg)
 }

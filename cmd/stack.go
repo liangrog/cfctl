@@ -32,7 +32,7 @@ func getCmdListStacks() *cobra.Command {
 				status = strings.Split(sfilter, ",")
 			}
 
-			return stack.ListStacks(cmd.Flags().Lookup("output").Value.String(), status...)
+			return stack.CmdListStacks(cmd.Flags().Lookup("output").Value.String(), status...)
 		},
 	}
 
