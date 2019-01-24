@@ -38,7 +38,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	Cmds.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("config file (default is $HOME/%s%s)", cfgFileName, cfgFileExtension))
-	Cmds.PersistentFlags().StringP("output", "o", "", "output type. If not given, output json. Use 'yaml' for yaml output.")
+	Cmds.PersistentFlags().StringP("output", "o", "json", "output type. Default to json. Use 'yaml' for yaml output.")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -73,7 +73,7 @@ func initConfig() {
 
 func Execute() {
 	if err := Cmds.Execute(); err != nil {
-		fmt.Println(err)
+		//fmt.Println(err)
 		os.Exit(1)
 	}
 }

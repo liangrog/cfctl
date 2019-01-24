@@ -65,20 +65,6 @@ func (s *Stack) ListStacks(format string, statusFilter ...string) ([]*cf.StackSu
 	return stackSummary, nil
 }
 
-// List all stacks and print to stdout
-func (s *Stack) CmdListStacks(format string, statusFilter ...string) error {
-	stackSummary, err := s.ListStacks(format, statusFilter...)
-	if err != nil {
-		return err
-	}
-
-	if err := utils.Print(format, stackSummary); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Validate cloudformation template
 //
 // url must be in AWS s3 URL. See https://docs.aws.amazon.com/sdk-for-go/api/service/cloudformation/#ValidateTemplateInput
@@ -89,13 +75,13 @@ func (s *Stack) ValidateTemplate(tpl []byte, url string) (*cf.ValidateTemplateOu
 
 	// Must have one valide
 	if len(tpl) == 0 && len(url) == 0 {
-		return output, errors.New(utils.MsgFormat("Missing cloudformation template or template URLs"))
+		return output, errors.New(utils.MsgFormat("Missing cloudformation template or template URLs", utils.MessageTypeError))
 	}
 
 	// If template string is given
 	if len(tpl) > 0 {
 		if len(tpl) > maxTemplateLength {
-			return output, errors.New(utils.MsgFormat(fmt.Sprintf("Exceeded maximum template size of %d bytes", maxTemplateLength)))
+			return output, errors.New(utils.MsgFormat(fmt.Sprintf("Exceeded maximum template size of %d bytes", maxTemplateLength), utils.MessageTypeError))
 		}
 
 		input = &cf.ValidateTemplateInput{
@@ -170,4 +156,137 @@ func (s *Stack) DeleteStack(stackName string, retainResc ...string) (*cf.DeleteS
 	}
 
 	return s.Client.DeleteStack(input)
+}
+
+// Describe a stack by a given name
+func (s *Stack) DescribeStack(stackName string) ([]*cf.Stack, error) {
+	if len(stackName) <= 0 {
+		return nil, errors.New(utils.MsgFormat("Missing stack name.", utils.MessageTypeError))
+	}
+
+	input := new(cf.DescribeStacksInput).SetStackName(stackName)
+	out, err := s.Client.DescribeStacks(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return out.Stacks, nil
+}
+
+// If stack exists
+func (s *Stack) Exist(stackName string) bool {
+	stacks, err := s.DescribeStack(stackName)
+
+	if err != nil || len(stacks) != 1 {
+		return false
+	}
+
+	return true
+}
+
+// Describe all stacks
+func (s *Stack) DescribeStacks() ([]*cf.Stack, error) {
+	var out []*cf.Stack
+	var nextToken *string
+
+	for {
+		input := &cf.DescribeStacksInput{
+			NextToken: nextToken,
+		}
+
+		o, err := s.Client.DescribeStacks(input)
+		if err != nil {
+			return out, err
+		} else if len(o.Stacks) > 0 {
+			out = append(out, o.Stacks...)
+		}
+
+		if o.NextToken == nil {
+			break
+		}
+
+		nextToken = o.NextToken
+	}
+
+	return out, nil
+}
+
+// Get stack event
+func (s *Stack) DescribeStackEvents(stackName string) ([]*cf.StackEvent, error) {
+	var events []*cf.StackEvent
+	var nextToken *string
+
+	for {
+		input := &cf.DescribeStackEventsInput{
+			NextToken: nextToken,
+			StackName: aws.String(stackName),
+		}
+
+		out, err := s.Client.DescribeStackEvents(input)
+		if err != nil {
+			return nil, err
+		}
+
+		events = append(events, out.StackEvents...)
+
+		if out.NextToken == nil {
+			break
+		}
+
+		nextToken = out.NextToken
+	}
+
+	return events, nil
+}
+
+// Kick off a stack drift detection process. Returns a
+// detection process Id to be used for status query
+func (s *Stack) DetectStackDrift(stackName string, resourceIds ...string) (string, error) {
+	var detectionId string
+
+	if len(stackName) == 0 {
+		return detectionId, errors.New(utils.MsgFormat("Missing stack name.", utils.MessageTypeError))
+	}
+
+	input := new(cf.DetectStackDriftInput).
+		SetStackName(stackName)
+
+	if len(resourceIds) > 0 {
+		input.SetLogicalResourceIds(aws.StringSlice(resourceIds))
+	}
+
+	output, err := s.Client.DetectStackDrift(input)
+	if err != nil {
+		return detectionId, err
+	} else {
+		detectionId = *output.StackDriftDetectionId
+	}
+
+	return detectionId, nil
+}
+
+// Detailing the stack drift at resources
+func (s *Stack) DescribeStackResourceDrifts(stackName string, status ...string) ([]*cf.StackResourceDrift, error) {
+	if len(stackName) == 0 {
+		return nil, errors.New(utils.MsgFormat("Missing stack name.", utils.MessageTypeError))
+	}
+
+	input := new(cf.DescribeStackResourceDriftsInput).
+		SetStackName(stackName)
+
+	if len(status) > 0 {
+		input.SetStackResourceDriftStatusFilters(aws.StringSlice(status))
+	}
+
+	output, err := s.Client.DescribeStackResourceDrifts(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return output.StackResourceDrifts, nil
+}
+
+// Get current drift detection process status
+func (s *Stack) DescribeStackDriftDetectionStatus(id string) (*cf.DescribeStackDriftDetectionStatusOutput, error) {
+	return s.Client.DescribeStackDriftDetectionStatus(new(cf.DescribeStackDriftDetectionStatusInput).SetStackDriftDetectionId(id))
 }

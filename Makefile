@@ -17,7 +17,6 @@ test:
 
 clean:
 	go clean
-	rm ./${APPNAME} || true
 
 fast:
 	go build -o ${APPNAME} ${LDFLAGS}
