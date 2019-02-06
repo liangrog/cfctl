@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	"github.com/liangrog/ansible-vault/vault"
 	"github.com/liangrog/cfctl/pkg/utils"
-	"github.com/liangrog/cfctl/pkg/vault"
 	"github.com/spf13/cobra"
 )
 

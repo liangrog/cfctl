@@ -4,8 +4,8 @@ import (
 	"errors"
 	"io/ioutil"
 
+	"github.com/liangrog/ansible-vault/vault"
 	"github.com/liangrog/cfctl/pkg/utils"
-	"github.com/liangrog/cfctl/pkg/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -24,7 +24,7 @@ func getCmdVaultEncrypt() *cobra.Command {
 		Long:  `Encrypt given content following ansible-vault spec`,
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
-				return errors.New("Missing file name in command argument")
+				return errors.New(utils.MsgFormat("Missing file name in command argument", utils.MessageTypeError))
 			}
 			return nil
 		},
