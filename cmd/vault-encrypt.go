@@ -66,12 +66,13 @@ func batchEncrypt(pss, pssFile string, files []string) error {
 			}
 
 			v := new(vault.Vault)
-			if err := v.Encrypt(data, pass); err != nil {
+			output, err := v.Encrypt(data, pass)
+			if err != nil {
 				res <- err
 				return
 			}
 
-			if err := ioutil.WriteFile(file, v.Encode(), 0644); err != nil {
+			if err := ioutil.WriteFile(file, output, 0644); err != nil {
 				res <- err
 			}
 

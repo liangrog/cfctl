@@ -1,16 +1,18 @@
 package cmd
 
 import (
-	"bufio"
+	_ "bufio"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"syscall"
 
 	"github.com/liangrog/cfctl/pkg/utils"
 	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var CmdVault = getCmdVault()
@@ -85,12 +87,12 @@ func GetPasswords(pass, passFile string) ([]string, error) {
 	}
 
 	// Prompt password if all failed
-	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("Password: ")
-	if scanner.Scan() {
-		passwords := scanner.Text()
+	if passwords, err := terminal.ReadPassword(int(syscall.Stdin)); err == nil {
+		// Make sure cursor start a new line
+		fmt.Print("\n")
 		if len(passwords) > 0 {
-			return strings.Split(passwords, ","), nil
+			return strings.Split(strings.TrimSpace(string(passwords)), ","), nil
 		}
 	}
 

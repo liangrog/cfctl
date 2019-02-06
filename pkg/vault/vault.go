@@ -15,6 +15,7 @@ import (
 )
 
 const (
+	// Ansible vault version
 	header = "$ANSIBLE_VAULT;1.1;AES256"
 
 	// Spec
@@ -130,6 +131,7 @@ func validateCheckSum(checkSum, data, hmacKey []byte) bool {
 	return hmac.Equal(mac.Sum(nil), checkSum)
 }
 
+// Data to be encrypted
 type Vault struct {
 	data     []byte
 	checkSum []byte
@@ -137,37 +139,37 @@ type Vault struct {
 }
 
 // Encypt given data for the password
-func (v *Vault) Encrypt(data []byte, password string) error {
+func (v *Vault) Encrypt(data []byte, password string) ([]byte, error) {
 	var err error
 
 	// Empty password is not allowed
 	if len(password) <= 0 {
-		return errors.New("Empty password")
+		return nil, errors.New("Empty password")
 	}
 
 	lines := strings.SplitN(string(data), "\n", 2)
 	if strings.TrimSpace(lines[0]) == header {
-		return errors.New("Given data has already been encrypted according to header")
+		return nil, errors.New("Given data has already been encrypted according to header")
 	}
 
 	// Get salt
 	v.salt, err = saltGen(saltLength)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	key := keyGen(password, v.salt)
 
 	v.data, err = cipherData("encrypt", data, key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	mac := hmac.New(sha256.New, key.hmacKey)
 	mac.Write(v.data)
 	v.checkSum = mac.Sum(nil)
 
-	return nil
+	return v.Encode(), nil
 }
 
 func (v *Vault) Encode() []byte {

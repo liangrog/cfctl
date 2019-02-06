@@ -12,10 +12,9 @@ func TestCipher(t *testing.T) {
 
 	v := new(Vault)
 
-	err := v.Encrypt([]byte(plainText), password)
+	encrypted, err := v.Encrypt([]byte(plainText), password)
 	assert.NoError(t, err)
-
-	encrypted := v.Encode()
+	assert.True(t, len(encrypted) > 0)
 
 	decrypted, err := v.Decrypt(password, encrypted)
 	assert.NoError(t, err)
