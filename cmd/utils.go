@@ -10,13 +10,5 @@ import (
 func silenceUsageOnError(cmd *cobra.Command, err error) {
 	if err != nil {
 		cmd.SilenceUsage = true
-		//		cmd.SilenceErrors = true
 	}
-}
-
-// Silence usage output and downstream
-// error output
-func silenceUsage(cmd *cobra.Command) {
-	cmd.SilenceUsage = true
-	//	cmd.SilenceErrors = true
 }

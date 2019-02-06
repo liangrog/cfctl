@@ -50,24 +50,40 @@ Load order:
         |- ec2-kubernetes.yaml
         |- s3-encrypted.yaml
         ...
-    |- modules
+    |- stacks
        |- jump-host.yaml
        |- web-server.yaml
         ...
-    |- project
-       |- rocket-man
+    |- deployments
+       |- foo
           |- env
-              |- dev.yaml
-              |- stage.yaml
-              |- prod.yaml
-          |- params.yaml
-          |- packages.yaml
-          |- config.yaml
-       |- super-woman
-          |- params.yaml
-          |- package.yaml
-          |- config.yaml
+              |- dev
+                 |- secret.yaml
+                 |- env.yaml
+              |- prod
+                 |- secret.yaml
+                 |_ env.yaml
+          |- params
+             |- jump-host
+                |- default.yaml
+                |- ap-southeast-2.yaml
+          |- stacks.yaml
 ```
+
+`templates` folder contains generic purpose templates. They can be used individually or being use by modules. Multi-level folder is allowed. The templates in this filder can be referred by using in the parameters in the format of `{{ template file/path/in/template/folder }}`.
+
+`modules` folder contains modules templates that represent a infrastructure function. It can be used individually or being referred by other stacks in the format of `{{ stack file/path/in/modules/folder }}` in the parameters file.
+
+secret can be used in parameters in the form of `{{ secret key-in-secret-file }}`. secret file cannot use any helpers.
+environment values can use secret helper.
+parameters file can use template and stack helpers.
+
+`{{ stackout stack-output-key }}` is the helper to get a output value of a stack
+
+For multi-region, create a seperate parameters file and name it with the AWS region name. The values in this file will override the default parameters file if exists.
+
+stacks.yaml contains stacks for the foo deployments. It will have creation orders, otherwise it will concurrently create the stacks.
+
 
 ### config.yaml
 The is the configurations file sets default values for cfctl
