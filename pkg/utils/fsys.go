@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strings"
 )
 
 // HomeDir returns the home directory for the current user
@@ -67,6 +69,7 @@ func IsUrlRegexp(urlStr string) bool {
 }
 
 // Search files in a directory
+// A Simple implementation
 func FindFiles(filePath string, recursive bool) ([]string, error) {
 	var list []string
 
@@ -80,7 +83,7 @@ func FindFiles(filePath string, recursive bool) ([]string, error) {
 	// If it's a recursive search, we'll walk
 	if recursive {
 		walk := func(path string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
+			if err == nil && info.Mode().IsRegular() {
 				add(path, info)
 			}
 
@@ -102,4 +105,62 @@ func FindFiles(filePath string, recursive bool) ([]string, error) {
 	sort.Strings(list)
 
 	return list, nil
+}
+
+// This function provides a fast result ready machanism
+// via feeding the result immediately as soon as the first
+// file found.
+// By default it will scan recursively. You can define
+// The level of the directory if desire.
+// Given level 0 means recursively.
+// Level 1 is only files in given root directory.
+// Level 2 is files in root directory + any files in folders under root.
+// Other levels are so on and so forth.
+// Exist channel provides a machanism for exiting the scan early
+// without creating memory leak.
+func ScanFiles(root string, exit <-chan bool, level int) (<-chan string, <-chan error) {
+	// Buffered channel, non-blocking
+	files := make(chan string)
+	e := make(chan error, 1)
+
+	go func() {
+		// Send signal to let listeners know all files have been scanned
+		defer close(files)
+
+		// Walk is following lexical order
+		e <- filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// If not file, return
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
+			// Only search within level of directory limit
+			if level > 0 {
+				rel, err := filepath.Rel(root, path)
+				if err != nil {
+					return err
+				}
+
+				parts := strings.Split(rel, "/")
+
+				if len(parts) > level {
+					return nil
+				}
+			}
+
+			select {
+			case files <- path:
+			case <-exit:
+				return errors.New("Recieved exit signal, existed")
+			}
+
+			return nil
+		})
+	}()
+
+	return files, e
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/liangrog/ansible-vault/vault"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -61,13 +61,11 @@ func batchDecrypt(pss, pssFile string, files []string) error {
 				return
 			}
 
-			v := new(vault.Vault)
-
 			// Try very givenn password
 			decrypted := false
 			var output []byte
 			for _, p := range pass {
-				output, err = v.Decrypt(p, data)
+				output, err = vault.Decrypt(p, data)
 				if err == nil {
 					decrypted = true
 					break

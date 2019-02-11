@@ -4,8 +4,8 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/liangrog/ansible-vault/vault"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -65,8 +65,7 @@ func batchEncrypt(pss, pssFile string, files []string) error {
 				return
 			}
 
-			v := new(vault.Vault)
-			output, err := v.Encrypt(data, pass)
+			output, err := vault.Encrypt(data, pass)
 			if err != nil {
 				res <- err
 				return

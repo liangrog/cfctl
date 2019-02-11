@@ -31,8 +31,11 @@ func getCmdStackList() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var status []string
 
-			if sfilter := cmd.Flags().Lookup("status").Value.String(); len(sfilter) > 0 {
-				status = strings.Split(sfilter, ",")
+			if cmd.Flags().Changed("status") {
+				status = strings.Split(
+					cmd.Flags().Lookup("status").Value.String(),
+					",",
+				)
 			}
 
 			err := listStacks(cmd.Flags().Lookup("output").Value.String(), status...)

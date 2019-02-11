@@ -27,18 +27,16 @@ func NewStack(cfapi cloudformationiface.CloudFormationAPI) *Stack {
 
 // List all stacks. Aggregate all pages and output only one array
 func (s *Stack) ListStacks(format string, statusFilter ...string) ([]*cf.StackSummary, error) {
-	var status []*string
 	var nextToken *string
 	var stackSummary []*cf.StackSummary
 
-	if len(statusFilter) > 0 {
-		status = aws.StringSlice(statusFilter)
-	}
-
 	for {
 		input := &cf.ListStacksInput{
-			NextToken:         nextToken,
-			StackStatusFilter: status,
+			NextToken: nextToken,
+		}
+
+		if len(statusFilter) > 0 {
+			input.SetStackStatusFilter(aws.StringSlice(statusFilter))
 		}
 
 		output, err := s.Client.ListStacks(input)
