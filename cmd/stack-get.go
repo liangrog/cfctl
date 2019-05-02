@@ -46,8 +46,6 @@ only return the detail for that stack`,
 
 // Get stacks
 func stackGet(format, stackName string) error {
-	var out []*cf.Stack
-
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
 
 	// If stack name given
@@ -59,7 +57,7 @@ func stackGet(format, stackName string) error {
 		if out, err := stack.DescribeStack(stackName); err != nil {
 			return err
 		} else {
-			if err := utils.Print(format, out[0]); err != nil {
+			if err := utils.Print(utils.FormatType(format), out); err != nil {
 				return err
 			}
 		}
@@ -72,7 +70,7 @@ func stackGet(format, stackName string) error {
 		return err
 	}
 
-	if err := utils.Print(format, out); err != nil {
+	if err := utils.Print(utils.FormatType(format), out); err != nil {
 		return err
 	}
 

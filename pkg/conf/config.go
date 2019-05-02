@@ -1,12 +1,16 @@
 package conf
 
 import (
+	"bytes"
+	"errors"
 	"io/ioutil"
-	"sort"
-	"sync"
+	"os"
+	"path"
+	"path/filepath"
+	"text/template"
 
+	"github.com/google/uuid"
 	"github.com/liangrog/cfctl/pkg/utils"
-	"github.com/liangrog/vault"
 	"gopkg.in/yaml.v2"
 )
 
@@ -20,17 +24,34 @@ type DeployConfig struct {
 	// Name of the s3 bucket for uploading template
 	S3Bucket string `yaml:"s3Bucket"`
 
-	// Values for the template
-	ValueDir string `yaml:"valueDir,omitempty"`
+	// Template directory
+	TemplateDir string `yaml:"templateDir"`
+
+	// Environments directory
+	EnvDir string `yaml:"envDir"`
+
+	// Template directory
+	ParamDir string `yaml:"paramDir"`
 
 	// Stacks config
 	Stacks []*StackConfig `yaml:"stacks"`
+
+	// config file absolute path
+	absPath string
 }
 
+// Stack configuration
 type StackConfig struct {
-	Name       string `yaml:"Name"`
-	Template   string `yaml:"template"`
-	Parameters string `yaml:"parameters,omitempty"`
+	// Name of the stack
+	Name string `yaml:"name"`
+
+	// Template relative path
+	Tpl string `yaml:"tpl"`
+
+	// Parameter file relative path
+	Param string `yaml:"param,omitempty"`
+
+	Tags map[string]string `yaml:"tags,omitempty"`
 }
 
 // Load deploy config from file.
@@ -46,131 +67,109 @@ func NewDeployConfig(file string) (*DeployConfig, error) {
 		return nil, err
 	}
 
+	// Allow using ENV function in configuration.
+	// Parse environment variable.
+	funcEnv := func(key string) string {
+		return os.Getenv(key)
+	}
+
+	funcMap := template.FuncMap{"env": funcEnv}
+
+	tmpl, err := template.New(uuid.New().String()).Funcs(funcMap).Parse(string(data))
+	if err != nil {
+		return nil, err
+	}
+
+	var b bytes.Buffer
+	if err := tmpl.Execute(&b, nil); err != nil {
+		return nil, err
+	}
+
 	dc := new(DeployConfig)
-	if err := yaml.Unmarshal(data, dc); err != nil {
+	if err := yaml.Unmarshal(b.Bytes(), dc); err != nil {
+		return nil, err
+	}
+
+	dc.absPath, err = filepath.Abs(filepath.Dir(file))
+	if err != nil {
+		return nil, err
+	}
+
+	if err := dc.Validate(); err != nil {
 		return nil, err
 	}
 
 	return dc, nil
 }
 
-// Result for value read
-type valueResult struct {
-	path   string
-	values map[string]string
-	err    error
+// Validate path configuration
+func (dc *DeployConfig) Validate() error {
+	var msg string
+
+	if ok, err := utils.IsDir(path.Join(dc.absPath, dc.TemplateDir)); !ok || err != nil {
+		msg = "There is a problem with templateDir in configuration."
+	}
+
+	if ok, err := utils.IsDir(path.Join(dc.absPath, dc.EnvDir)); !ok || err != nil {
+		msg = "There is a problem with envDir in configuration."
+	}
+
+	if ok, err := utils.IsDir(path.Join(dc.absPath, dc.ParamDir)); !ok || err != nil {
+		msg = "There is a problem with paramDir in configuration."
+	}
+
+	if len(msg) > 0 {
+		return errors.New(utils.MsgFormat(msg, utils.MessageTypeError))
+	}
+
+	return nil
 }
 
-// Processing given files into key-values
-func processValue(password string, paths <-chan string, out chan<- *valueResult, done <-chan bool) {
-	var v *valueResult
-	var tv map[string]string
+func (dc *DeployConfig) GetTplPath(n string) string {
+	return path.Join(dc.absPath, dc.TemplateDir, n)
+}
 
-	for p := range paths {
-		dat, err := ioutil.ReadFile(p)
-		if err != nil {
-			v = &valueResult{err: err}
+func (dc *DeployConfig) GetParamPath(n string) string {
+	return path.Join(dc.absPath, dc.ParamDir, n)
+}
+
+func (dc *DeployConfig) GetEnvDirPath(n string) string {
+	return path.Join(dc.absPath, dc.EnvDir, n)
+}
+
+// Return a stack config by its name
+func (dc *DeployConfig) GetStackConfigByName(n string) *StackConfig {
+	for _, sc := range dc.Stacks {
+		if sc.Name == n {
+			return sc
 		}
-		// If it's vault encrypted file, decrypt it
-		if vault.HasVaultHeader(dat) {
-			dat, err = vault.Decrypt(password, dat)
-			if err != nil {
-				v = &valueResult{err: err}
+	}
+
+	return nil
+}
+
+// Find stack config for given list
+func (dc *DeployConfig) GetStackList(l []string) (map[string]*StackConfig, error) {
+	result := make(map[string]*StackConfig)
+	if len(l) > 0 {
+		for _, sc := range dc.Stacks {
+			for _, s := range l {
+				if sc.Name == s {
+					result[s] = sc
+				}
 			}
 		}
 
-		// Keep overriding the same map
-		err = yaml.Unmarshal([]byte(dat), &tv)
-		if err != nil {
-			v = &valueResult{err: err}
-		} else {
-			v = &valueResult{
-				path:   p,
-				values: tv,
-			}
+		if len(l) != len(result) {
+			return nil, errors.New("There is mismatch between selected stacks and the configuration.")
 		}
 
-		select {
-		case out <- v:
-		case <-done:
-			return
+	} else {
+		// Return full list if no selected stacks
+		for _, sc := range dc.Stacks {
+			result[sc.Name] = sc
 		}
 	}
-}
 
-// Load Values from value directories.
-// The order of value override is always following
-// the lexical order of the file names
-func LoadValues(root string, password string) (map[string]string, error) {
-	// Find all files in paths
-	done := make(chan bool)
-	defer close(done)
-
-	// Start file scanning
-	paths, errc := utils.ScanFiles(root, done, 0)
-
-	// Start 20 workers
-	var wg sync.WaitGroup
-	numProc := 10
-	wg.Add(numProc)
-
-	c := make(chan *valueResult)
-	for i := 0; i < numProc; i++ {
-		go func() {
-			processValue(password, paths, c, done)
-			wg.Done()
-		}()
-	}
-
-	// Close result when all workers
-	go func() {
-		wg.Wait()
-		close(c)
-	}()
-
-	// Processing output
-
-	m := make(map[string]map[string]string)
-	for vr := range c {
-		if vr.err != nil {
-			return nil, vr.err
-		}
-		m[vr.path] = vr.values
-	}
-
-	// Check whether the file scan failed.
-	if err := <-errc; err != nil {
-		return nil, err
-	}
-
-	// Get keys
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	// Merge values
-	var values map[string]string
-	sort.Strings(keys)
-	for _, k := range keys {
-		values = MergeValues(values, m[k])
-	}
-
-	return values, nil
-}
-
-// Merge two maps
-func MergeValues(target, replace map[string]string) map[string]string {
-	if target == nil {
-		return replace
-	}
-
-	for k, v := range replace {
-		target[k] = v
-	}
-
-	return target
-}
-
-func GetDependencyTree() {
+	return result, nil
 }

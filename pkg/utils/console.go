@@ -21,6 +21,15 @@ const (
 	MessageTypeFatal MessageType = "FATAL"
 )
 
+// Print format types
+type FormatType string
+
+const (
+	FormatYaml FormatType = "yaml"
+	FormatJson FormatType = "json"
+	FormatCmd  FormatType = "cmd"
+)
+
 // Function type to output to stdout
 type StdoutStrFn func(input interface{}) (string, error)
 
@@ -43,19 +52,21 @@ func toDefault(input interface{}) (string, error) {
 
 // stdout string conversion factory
 // Default to json
-func StdoutStrFactory(format string) StdoutStrFn {
+func StdoutStrFactory(format FormatType) StdoutStrFn {
 	switch format {
-	case "yaml":
+	case FormatYaml:
 		return toYamlStr
-	case "json":
+	case FormatJson:
 		return toJsonStr
+	case FormatCmd:
+		return toDefault
 	default:
 		return toDefault
 	}
 }
 
 // Print given interface to given format
-func Print(format string, s ...interface{}) error {
+func Print(format FormatType, s ...interface{}) error {
 	if len(s) == 0 {
 		return errors.New(MsgFormat("Printing output error: No object given", MessageTypeError))
 	}
@@ -76,4 +87,21 @@ func Print(format string, s ...interface{}) error {
 // Format error message
 func MsgFormat(msg string, msgType MessageType, options ...string) string {
 	return fmt.Sprintf("%s", msg)
+}
+
+// Command line result print to console. It takes cmd options.
+func CmdPrint(opt map[string]interface{}, format FormatType, s ...interface{}) error {
+	for k, v := range opt {
+		switch vv := v.(type) {
+		case bool:
+			switch k {
+			case "quiet":
+				if vv {
+					return nil
+				}
+			}
+		}
+	}
+
+	return Print(format, s...)
 }

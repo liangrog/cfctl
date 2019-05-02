@@ -10,6 +10,8 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 // HomeDir returns the home directory for the current user
@@ -163,4 +165,14 @@ func ScanFiles(root string, exit <-chan bool, level int) (<-chan string, <-chan 
 	}()
 
 	return files, e
+}
+
+// Yaml cleansing such as remove comment in yaml file
+func GetCleanYamlBytes(input []byte) ([]byte, error) {
+	t := make(map[interface{}]interface{})
+	if err := yaml.Unmarshal(input, &t); err != nil {
+		return nil, err
+	}
+
+	return yaml.Marshal(&t)
 }

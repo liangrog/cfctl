@@ -51,7 +51,6 @@ func getCmdStackList() *cobra.Command {
 
 // List all stacks and print to stdout
 func listStacks(format string, statusFilter ...string) error {
-
 	stackSummary, err := ctlaws.
 		NewStack(cf.New(ctlaws.AWSSess)).
 		ListStacks(format, statusFilter...)
@@ -60,7 +59,7 @@ func listStacks(format string, statusFilter ...string) error {
 		return err
 	}
 
-	if err := utils.Print(format, stackSummary); err != nil {
+	if err := utils.Print(utils.FormatType(format), stackSummary); err != nil {
 		return err
 	}
 

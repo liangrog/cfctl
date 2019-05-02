@@ -99,7 +99,7 @@ func templateValidate(format, path string, recursive bool) error {
 	}
 
 	if errNum == 0 {
-		utils.Print(format, "No error found")
+		utils.Print(utils.FormatType(format), "No error found")
 	}
 
 	return nil

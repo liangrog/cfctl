@@ -15,7 +15,7 @@ func init() {
 func getCmdStack() *cobra.Command {
 	return &cobra.Command{
 		Use:   "stack",
-		Short: "Manage stacks",
+		Short: "manage stacks",
 		Long:  `All actions that manages stack(s)`,
 	}
 }

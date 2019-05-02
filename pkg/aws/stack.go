@@ -144,6 +144,32 @@ func (s *Stack) CreateStack(name string, params map[string]string, tags map[stri
 	return s.Client.CreateStack(input)
 }
 
+// Update stack
+func (s *Stack) UpdateStack(name string, params map[string]string, tags map[string]string, tpl []byte, url string) (*cf.UpdateStackOutput, error) {
+	var output *cf.UpdateStackOutput
+
+	// Validate template
+	Valid, err := s.ValidateTemplate(tpl, url)
+	if err != nil {
+		return output, err
+	}
+
+	input := new(cf.UpdateStackInput).
+		SetStackName(name).
+		SetParameters(s.ParamSlice(params)).
+		SetCapabilities(Valid.Capabilities).
+		SetTags(s.TagSlice(tags))
+
+	// Template
+	if len(tpl) > 0 {
+		input.SetTemplateBody(string(tpl))
+	} else {
+		input.SetTemplateURL(url)
+	}
+
+	return s.Client.UpdateStack(input)
+}
+
 // Delete a stack
 func (s *Stack) DeleteStack(stackName string, retainResc ...string) (*cf.DeleteStackOutput, error) {
 	input := new(cf.DeleteStackInput).
@@ -157,25 +183,25 @@ func (s *Stack) DeleteStack(stackName string, retainResc ...string) (*cf.DeleteS
 }
 
 // Describe a stack by a given name
-func (s *Stack) DescribeStack(stackName string) ([]*cf.Stack, error) {
+func (s *Stack) DescribeStack(stackName string) (*cf.Stack, error) {
 	if len(stackName) <= 0 {
 		return nil, errors.New(utils.MsgFormat("Missing stack name.", utils.MessageTypeError))
 	}
 
 	input := new(cf.DescribeStacksInput).SetStackName(stackName)
 	out, err := s.Client.DescribeStacks(input)
+
 	if err != nil {
 		return nil, err
 	}
 
-	return out.Stacks, nil
+	return out.Stacks[0], nil
 }
 
 // If stack exists
 func (s *Stack) Exist(stackName string) bool {
 	stacks, err := s.DescribeStack(stackName)
-
-	if err != nil || len(stacks) != 1 {
+	if err != nil || stacks == nil {
 		return false
 	}
 

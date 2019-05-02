@@ -57,6 +57,8 @@ Load order:
     |- deployments
        |- foo
           |- env
+              |- default
+                 |- vars.yaml
               |- dev
                  |- secret.yaml
                  |- env.yaml
@@ -69,6 +71,17 @@ Load order:
                 |- ap-southeast-2.yaml
           |- stacks.yaml
 ```
+`env` sub-folder convention:
+* `default` folder contains yaml files that will be applied to any environment as the default.
+* Specific folder given by the command line will override values defined by `default` folder.
+* ansible-vault encrypted file will be auto dectected and decrypted during variable merger.
+
+Process of Parameter Template Parsing:
+1. `env/default` loaded
+2. Specific env folder loaded and merged with existing values
+3. ?
+
+
 
 `templates` folder contains generic purpose templates. They can be used individually or being use by modules. Multi-level folder is allowed. The templates in this filder can be referred by using in the parameters in the format of `{{ template file/path/in/template/folder }}`.
 

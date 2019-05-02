@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var stack = NewStack(&fakeClient{})
+var stack = NewStack(&stackFakeClient{})
 
 // mock client
-type fakeClient struct {
+type stackFakeClient struct {
 	cloudformationiface.CloudFormationAPI
 }
 
-func (fc *fakeClient) ListStacks(input *cf.ListStacksInput) (*cf.ListStacksOutput, error) {
+func (fc *stackFakeClient) ListStacks(input *cf.ListStacksInput) (*cf.ListStacksOutput, error) {
 	if *input.StackStatusFilter[0] == "UPDATE_COMPLETE" {
 		return &cf.ListStacksOutput{
 			StackSummaries: []*cf.StackSummary{
@@ -44,19 +44,19 @@ func (fc *fakeClient) ListStacks(input *cf.ListStacksInput) (*cf.ListStacksOutpu
 	}, nil
 }
 
-func (fc *fakeClient) ValidateTemplate(input *cf.ValidateTemplateInput) (*cf.ValidateTemplateOutput, error) {
+func (fc *stackFakeClient) ValidateTemplate(input *cf.ValidateTemplateInput) (*cf.ValidateTemplateOutput, error) {
 	return new(cf.ValidateTemplateOutput).SetDescription("testing"), nil
 }
 
-func (fc *fakeClient) CreateStack(input *cf.CreateStackInput) (*cf.CreateStackOutput, error) {
+func (fc *stackFakeClient) CreateStack(input *cf.CreateStackInput) (*cf.CreateStackOutput, error) {
 	return new(cf.CreateStackOutput).SetStackId("testing"), nil
 }
 
-func (fc *fakeClient) DeleteStack(input *cf.DeleteStackInput) (*cf.DeleteStackOutput, error) {
+func (fc *stackFakeClient) DeleteStack(input *cf.DeleteStackInput) (*cf.DeleteStackOutput, error) {
 	return new(cf.DeleteStackOutput), nil
 }
 
-func (fc *fakeClient) DescribeStacks(input *cf.DescribeStacksInput) (*cf.DescribeStacksOutput, error) {
+func (fc *stackFakeClient) DescribeStacks(input *cf.DescribeStacksInput) (*cf.DescribeStacksOutput, error) {
 	var stacks []*cf.Stack
 
 	sampleStack := new(cf.Stack).
@@ -70,7 +70,7 @@ func (fc *fakeClient) DescribeStacks(input *cf.DescribeStacksInput) (*cf.Describ
 	}, nil
 }
 
-func (fc *fakeClient) DescribeStackEvents(input *cf.DescribeStackEventsInput) (*cf.DescribeStackEventsOutput, error) {
+func (fc *stackFakeClient) DescribeStackEvents(input *cf.DescribeStackEventsInput) (*cf.DescribeStackEventsOutput, error) {
 	var events []*cf.StackEvent
 
 	e := new(cf.StackEvent).
@@ -85,11 +85,11 @@ func (fc *fakeClient) DescribeStackEvents(input *cf.DescribeStackEventsInput) (*
 	}, nil
 }
 
-func (fc *fakeClient) DetectStackDrift(input *cf.DetectStackDriftInput) (*cf.DetectStackDriftOutput, error) {
+func (fc *stackFakeClient) DetectStackDrift(input *cf.DetectStackDriftInput) (*cf.DetectStackDriftOutput, error) {
 	return new(cf.DetectStackDriftOutput).SetStackDriftDetectionId("detect-id-123abc"), nil
 }
 
-func (fc *fakeClient) DescribeStackResourceDrifts(input *cf.DescribeStackResourceDriftsInput) (*cf.DescribeStackResourceDriftsOutput, error) {
+func (fc *stackFakeClient) DescribeStackResourceDrifts(input *cf.DescribeStackResourceDriftsInput) (*cf.DescribeStackResourceDriftsOutput, error) {
 	var drifts []*cf.StackResourceDrift
 
 	d := new(cf.StackResourceDrift).
@@ -103,7 +103,7 @@ func (fc *fakeClient) DescribeStackResourceDrifts(input *cf.DescribeStackResourc
 	}, nil
 }
 
-func (fc *fakeClient) DescribeStackDriftDetectionStatus(input *cf.DescribeStackDriftDetectionStatusInput) (*cf.DescribeStackDriftDetectionStatusOutput, error) {
+func (fc *stackFakeClient) DescribeStackDriftDetectionStatus(input *cf.DescribeStackDriftDetectionStatusInput) (*cf.DescribeStackDriftDetectionStatusOutput, error) {
 	return new(cf.DescribeStackDriftDetectionStatusOutput).
 		SetDetectionStatus(cf.StackDriftDetectionStatusDetectionComplete).
 		SetStackDriftDetectionId("abc-test").
@@ -116,7 +116,7 @@ func TestTagSlice(t *testing.T) {
 		"Name": "testing",
 	}
 
-	tags := NewStack(&fakeClient{}).TagSlice(data)
+	tags := NewStack(&stackFakeClient{}).TagSlice(data)
 	assert.Equal(t, 1, len(tags))
 	assert.Equal(t, "testing", *tags[0].Value)
 }
@@ -126,7 +126,7 @@ func TestParamSlice(t *testing.T) {
 		"S3Name": "testing",
 	}
 
-	params := NewStack(&fakeClient{}).ParamSlice(data)
+	params := NewStack(&stackFakeClient{}).ParamSlice(data)
 	assert.Equal(t, 1, len(params))
 	assert.Equal(t, "testing", *params[0].ParameterValue)
 }
@@ -181,7 +181,7 @@ func TestDescribeStack(t *testing.T) {
 
 	s, err = stack.DescribeStack("test")
 	assert.NoError(t, err)
-	assert.True(t, len(s) > 0)
+	assert.NotNil(t, s)
 }
 
 func TestDescribeStacks(t *testing.T) {

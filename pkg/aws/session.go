@@ -22,10 +22,13 @@ const (
 )
 
 var (
+	// TO-DO:
+	// Investigate region picking up from env
 	AWSSess = session.Must(
 		session.NewSession(
 			&aws.Config{
 				HTTPClient: GetHttpClient(),
+				//				Region:     aws.String("ap-southeast-2"),
 			},
 		),
 	)
