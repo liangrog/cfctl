@@ -3,6 +3,7 @@ package aws
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
@@ -313,4 +314,50 @@ func (s *Stack) DescribeStackResourceDrifts(stackName string, status ...string) 
 // Get current drift detection process status
 func (s *Stack) DescribeStackDriftDetectionStatus(id string) (*cf.DescribeStackDriftDetectionStatusOutput, error) {
 	return s.Client.DescribeStackDriftDetectionStatus(new(cf.DescribeStackDriftDetectionStatusInput).SetStackDriftDetectionId(id))
+}
+
+// Stack update waiter
+func (s *Stack) WaitUntilStackUpdateComplete(input *cf.DescribeStacksInput) error {
+	return s.Client.WaitUntilStackUpdateComplete(input)
+}
+
+// Stack create waiter
+func (s *Stack) WaitUntilStackCreateComplete(input *cf.DescribeStacksInput) error {
+	return s.Client.WaitUntilStackCreateComplete(input)
+}
+
+// Stack delete waiter
+func (s *Stack) WaitUntilStackDeleteComplete(input *cf.DescribeStacksInput) error {
+	return s.Client.WaitUntilStackDeleteComplete(input)
+}
+
+//func (c *CloudFormation) DescribeStackEvents(input *DescribeStackEventsInput) (*DescribeStackEventsOutput, error)
+func (s *Stack) PollStackEvents(stackName, waiterType string) error {
+	stop := make(chan error)
+	fmt.Printf("Start for stack %s\n", stackName)
+	go func() {
+		var err error
+		input := &cf.DescribeStacksInput{StackName: aws.String(stackName)}
+		switch waiterType {
+		case "create":
+			err = s.WaitUntilStackCreateComplete(input)
+		case "update":
+			err = s.WaitUntilStackUpdateComplete(input)
+		case "delete":
+			err = s.WaitUntilStackDeleteComplete(input)
+		}
+
+		stop <- err
+	}()
+
+	for {
+		select {
+		case err := <-stop:
+			return err
+		default:
+			fmt.Println("waiting...")
+		}
+
+		time.Sleep(15 * time.Second)
+	}
 }

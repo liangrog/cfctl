@@ -175,13 +175,20 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 			return err
 		}
 
+		var waiterType string
 		if stack.Exist(stc.Name) {
 			_, err = stack.UpdateStack(stc.Name, params, stc.Tags, dat, "")
+			waiterType = "update"
 		} else {
 			_, err = stack.CreateStack(stc.Name, params, stc.Tags, dat, "")
+			waiterType = "create"
 		}
 
 		if err != nil {
+			return err
+		}
+
+		if err := stack.PollStackEvents(stc.Name, waiterType); err != nil {
 			return err
 		}
 	}
