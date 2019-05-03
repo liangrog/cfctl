@@ -99,6 +99,12 @@ func Parse(s string, kv map[string]string, dc *conf.DeployConfig) ([]byte, error
 			return "", err
 		}
 
+		fmt.Printf(
+			"[ s3 | upload ] template: %s\tURL: %s\n",
+			path,
+			result.Location,
+		)
+
 		return result.Location, nil
 	}
 
@@ -110,6 +116,12 @@ func Parse(s string, kv map[string]string, dc *conf.DeployConfig) ([]byte, error
 	// Parse cloudformation stack output
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
 	funcStackOutput := func(name, key string) (string, error) {
+		fmt.Printf(
+			"[ stack | output ] name: %s\tkey: %s\n",
+			name,
+			key,
+		)
+
 		stack, err := stack.DescribeStack(name)
 		if err != nil {
 			return "", err

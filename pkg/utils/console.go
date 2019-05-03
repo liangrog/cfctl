@@ -89,19 +89,7 @@ func MsgFormat(msg string, msgType MessageType, options ...string) string {
 	return fmt.Sprintf("%s", msg)
 }
 
-// Command line result print to console. It takes cmd options.
-func CmdPrint(opt map[string]interface{}, format FormatType, s ...interface{}) error {
-	for k, v := range opt {
-		switch vv := v.(type) {
-		case bool:
-			switch k {
-			case "quiet":
-				if vv {
-					return nil
-				}
-			}
-		}
-	}
-
-	return Print(format, s...)
+// Print info
+func InfoPrint(s ...interface{}) error {
+	return Print(FormatCmd, s...)
 }

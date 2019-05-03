@@ -3,6 +3,7 @@ package aws
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -331,33 +332,122 @@ func (s *Stack) WaitUntilStackDeleteComplete(input *cf.DescribeStacksInput) erro
 	return s.Client.WaitUntilStackDeleteComplete(input)
 }
 
-//func (c *CloudFormation) DescribeStackEvents(input *DescribeStackEventsInput) (*DescribeStackEventsOutput, error)
+// Get stack events. When given zero timestamp, it returns all events for the stack.
+// Event result is ordered in an chronic ascending order.
+func (s *Stack) GetStackEvents(stackName string, timestamp time.Time) ([]*cf.StackEvent, error) {
+	var result []*cf.StackEvent
+
+	input := &cf.DescribeStackEventsInput{StackName: aws.String(stackName)}
+	for {
+		output, err := s.Client.DescribeStackEvents(input)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, se := range output.StackEvents {
+			// If timestamp given, only log the events after the given timestamp
+			if !timestamp.IsZero() && timestamp.After(*se.Timestamp) {
+				continue
+			}
+
+			result = append(result, se)
+		}
+
+		//Break if no more event page
+		if output.NextToken == nil {
+			break
+		}
+
+		// Set new input if there is next page
+		input = &cf.DescribeStackEventsInput{
+			NextToken: output.NextToken,
+			StackName: aws.String(stackName),
+		}
+	}
+
+	// Sort events in an ascending order
+	sort.Slice(result, func(i, j int) bool { return (*result[i].Timestamp).Before(*result[j].Timestamp) })
+
+	return result, nil
+}
+
+const (
+	// Waiter type
+	StackWaiterTypeCreate = "create"
+	StackWaiterTypeUpdate = "update"
+	StackWaiterTypeDelete = "delete"
+)
+
+// Poll stack events and print it out in console
 func (s *Stack) PollStackEvents(stackName, waiterType string) error {
+	// Stop signal from waiter
 	stop := make(chan error)
-	fmt.Printf("Start for stack %s\n", stackName)
+
+	// Stack event start timestamp
+	timestamp := time.Now()
+
+	// Start the waiter
 	go func() {
 		var err error
 		input := &cf.DescribeStacksInput{StackName: aws.String(stackName)}
 		switch waiterType {
-		case "create":
+		case StackWaiterTypeCreate:
 			err = s.WaitUntilStackCreateComplete(input)
-		case "update":
+		case StackWaiterTypeUpdate:
 			err = s.WaitUntilStackUpdateComplete(input)
-		case "delete":
+		case StackWaiterTypeDelete:
 			err = s.WaitUntilStackDeleteComplete(input)
 		}
 
+		// Signal the wait is over
 		stop <- err
 	}()
 
 	for {
+		// Fetch stack event and print it out
+		if events, err := s.GetStackEvents(stackName, timestamp); err != nil {
+			return err
+		} else if len(events) > 0 {
+			tmpTime := timestamp
+			for _, evnt := range events {
+				if timestamp.Before(*evnt.Timestamp) {
+					// Printing stack events
+					outStr := fmt.Sprintf(
+						"[ stack | %s ] %s\t%s\t%s\t%s",
+						waiterType,
+						stackName,
+						(*evnt.Timestamp).Format(time.RFC3339),
+						*evnt.LogicalResourceId,
+						*evnt.ResourceStatus,
+					)
+
+					// Not all records have reason
+					if evnt.ResourceStatusReason != nil {
+						outStr += fmt.Sprintf("\t%s", *evnt.ResourceStatusReason)
+					}
+
+					utils.InfoPrint(outStr)
+
+					// Capture the latest event timestamp
+					if tmpTime.Before(*evnt.Timestamp) {
+						tmpTime = *evnt.Timestamp
+					}
+				}
+			}
+
+			// Update timestamp for next fetch
+			timestamp = tmpTime
+		}
+
 		select {
+		// Exit if the wait is over
 		case err := <-stop:
 			return err
 		default:
-			fmt.Println("waiting...")
+			// Poll every seconnd
+			time.Sleep(1 * time.Second)
 		}
-
-		time.Sleep(15 * time.Second)
 	}
+
+	return nil
 }

@@ -92,25 +92,18 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 		return err
 	}
 
-	opts := map[string]interface{}{
-		"quiet": quiet,
-	}
-
 	// Create S3 bucket if it doesn't exist
 	cfs3 := ctlaws.NewS3(s3.New(ctlaws.AWSSess))
 	if exist, err := cfs3.IfBucketExist(dc.S3Bucket); err != nil {
 		return err
 	} else if !exist {
-		utils.CmdPrint(
-			opts,
-			utils.FormatCmd,
-			utils.MsgFormat(fmt.Sprintf("Bucket %s doesn't exist. It will be created.", dc.S3Bucket), utils.MessageTypeInfo),
-		)
-
+		utils.InfoPrint(fmt.Sprintf("[ warning ] s3 bucket %s doesn't exist. It will be created.", dc.S3Bucket), utils.MessageTypeInfo)
 		if _, err := cfs3.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(dc.S3Bucket)}); err != nil {
 			return err
 		}
 	}
+
+	utils.InfoPrint(fmt.Sprintf("[ info ] found s3 bucket %s", dc.S3Bucket))
 
 	// Retrieve the list of stacks
 	var cmdsl []string
@@ -159,6 +152,9 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 			return err
 		}
 
+		// Line seperator for each stack
+		fmt.Println("")
+
 		// Parse parameter template
 		paramBytes, err := parser.Parse(string(paramTpl), kv, dc)
 		if err != nil {
@@ -178,10 +174,10 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 		var waiterType string
 		if stack.Exist(stc.Name) {
 			_, err = stack.UpdateStack(stc.Name, params, stc.Tags, dat, "")
-			waiterType = "update"
+			waiterType = ctlaws.StackWaiterTypeUpdate
 		} else {
 			_, err = stack.CreateStack(stc.Name, params, stc.Tags, dat, "")
-			waiterType = "create"
+			waiterType = ctlaws.StackWaiterTypeCreate
 		}
 
 		if err != nil {

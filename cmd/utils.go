@@ -9,6 +9,6 @@ import (
 // using RunE in command
 func silenceUsageOnError(cmd *cobra.Command, err error) {
 	if err != nil {
-		//		cmd.SilenceUsage = true
+		cmd.SilenceUsage = true
 	}
 }
