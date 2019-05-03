@@ -125,7 +125,7 @@ func (s *Stack) CreateStack(name string, params map[string]string, tags map[stri
 	var stackOutput *cf.CreateStackOutput
 
 	// Validate template
-	Valid, err := s.ValidateTemplate(tpl, url)
+	valid, err := s.ValidateTemplate(tpl, url)
 	if err != nil {
 		return stackOutput, err
 	}
@@ -133,7 +133,7 @@ func (s *Stack) CreateStack(name string, params map[string]string, tags map[stri
 	input := new(cf.CreateStackInput).
 		SetStackName(name).
 		SetParameters(s.ParamSlice(params)).
-		SetCapabilities(Valid.Capabilities).
+		SetCapabilities(valid.Capabilities).
 		SetTags(s.TagSlice(tags))
 
 	// Template
@@ -317,21 +317,6 @@ func (s *Stack) DescribeStackDriftDetectionStatus(id string) (*cf.DescribeStackD
 	return s.Client.DescribeStackDriftDetectionStatus(new(cf.DescribeStackDriftDetectionStatusInput).SetStackDriftDetectionId(id))
 }
 
-// Stack update waiter
-func (s *Stack) WaitUntilStackUpdateComplete(input *cf.DescribeStacksInput) error {
-	return s.Client.WaitUntilStackUpdateComplete(input)
-}
-
-// Stack create waiter
-func (s *Stack) WaitUntilStackCreateComplete(input *cf.DescribeStacksInput) error {
-	return s.Client.WaitUntilStackCreateComplete(input)
-}
-
-// Stack delete waiter
-func (s *Stack) WaitUntilStackDeleteComplete(input *cf.DescribeStacksInput) error {
-	return s.Client.WaitUntilStackDeleteComplete(input)
-}
-
 // Get stack events. When given zero timestamp, it returns all events for the stack.
 // Event result is ordered in an chronic ascending order.
 func (s *Stack) GetStackEvents(stackName string, timestamp time.Time) ([]*cf.StackEvent, error) {
@@ -345,7 +330,7 @@ func (s *Stack) GetStackEvents(stackName string, timestamp time.Time) ([]*cf.Sta
 		}
 
 		for _, se := range output.StackEvents {
-			// If timestamp given, only log the events after the given timestamp
+			// If timestamp given, only record the events after the given timestamp.
 			if !timestamp.IsZero() && timestamp.After(*se.Timestamp) {
 				continue
 			}
@@ -353,62 +338,68 @@ func (s *Stack) GetStackEvents(stackName string, timestamp time.Time) ([]*cf.Sta
 			result = append(result, se)
 		}
 
-		//Break if no more event page
+		//Break if no more event page.
 		if output.NextToken == nil {
 			break
 		}
 
-		// Set new input if there is next page
+		// Set new input if there is next page.
 		input = &cf.DescribeStackEventsInput{
 			NextToken: output.NextToken,
 			StackName: aws.String(stackName),
 		}
 	}
 
-	// Sort events in an ascending order
+	// Sort events in an chronic ascending order.
 	sort.Slice(result, func(i, j int) bool { return (*result[i].Timestamp).Before(*result[j].Timestamp) })
 
 	return result, nil
 }
 
 const (
-	// Waiter type
+	// Waiter type "create".
 	StackWaiterTypeCreate = "create"
+
+	// Waiter type "update".
 	StackWaiterTypeUpdate = "update"
+
+	// Waiter type "delete".
 	StackWaiterTypeDelete = "delete"
 )
 
-// Poll stack events and print it out in console
+// Poll stack events and print them out in console.
 func (s *Stack) PollStackEvents(stackName, waiterType string) error {
-	// Stop signal from waiter
+	// Stop signal from waiter.
 	stop := make(chan error)
 
-	// Stack event start timestamp
+	// Stack event start timestamp.
 	timestamp := time.Now()
 
-	// Start the waiter
+	// Start the waiter.
 	go func() {
 		var err error
 		input := &cf.DescribeStacksInput{StackName: aws.String(stackName)}
+
 		switch waiterType {
 		case StackWaiterTypeCreate:
-			err = s.WaitUntilStackCreateComplete(input)
+			err = s.Client.WaitUntilStackCreateComplete(input)
 		case StackWaiterTypeUpdate:
-			err = s.WaitUntilStackUpdateComplete(input)
+			err = s.Client.WaitUntilStackUpdateComplete(input)
 		case StackWaiterTypeDelete:
-			err = s.WaitUntilStackDeleteComplete(input)
+			err = s.Client.WaitUntilStackDeleteComplete(input)
 		}
 
-		// Signal the wait is over
+		// Signal the wait is over.
 		stop <- err
 	}()
 
 	for {
-		// Fetch stack event and print it out
+		// Fetch stack event and print it out.
 		if events, err := s.GetStackEvents(stackName, timestamp); err != nil {
 			return err
 		} else if len(events) > 0 {
 			tmpTime := timestamp
+
 			for _, evnt := range events {
 				if timestamp.Before(*evnt.Timestamp) {
 					// Printing stack events
@@ -421,21 +412,21 @@ func (s *Stack) PollStackEvents(stackName, waiterType string) error {
 						*evnt.ResourceStatus,
 					)
 
-					// Not all records have reason
+					// Not all records have reason.
 					if evnt.ResourceStatusReason != nil {
 						outStr += fmt.Sprintf("\t%s", *evnt.ResourceStatusReason)
 					}
 
 					utils.InfoPrint(outStr)
 
-					// Capture the latest event timestamp
+					// Update to the newer event timestamp.
 					if tmpTime.Before(*evnt.Timestamp) {
 						tmpTime = *evnt.Timestamp
 					}
 				}
 			}
 
-			// Update timestamp for next fetch
+			// Update current newest timestamp for the next fetch.
 			timestamp = tmpTime
 		}
 
@@ -445,7 +436,7 @@ func (s *Stack) PollStackEvents(stackName, waiterType string) error {
 			return err
 		default:
 			// Poll every seconnd
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Second)
 		}
 	}
 

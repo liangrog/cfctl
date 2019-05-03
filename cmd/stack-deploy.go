@@ -22,11 +22,29 @@ import (
 )
 
 const (
+	// Environment variable for vault password.
 	ENV_VAULT_PASSWORD = "ANSIBLE_VAULT_PASSWORD"
+
+	// Command line flag for vault password.
 	CMD_VAULT_PASSWORD = "vault-password"
+
+	// Command line flag for stacks.
+	CMD_STACK_DEPLOY_STACK = "stack"
+
+	// Command line flag for configuration file.
+	CMD_STACK_DEPLOY_FILE = "file"
+
+	// Command line flag for dry run.
+	CMD_STACK_DEPLOY_DRY_RUN = "dry-run"
+
+	// Command line flag for envoirnment folder.
+	CMD_STACK_DEPLOY_ENV = "env"
+
+	// Default environment folder name
+	STACK_DEPLOY_ENV_DEFAULT_FOLDER = "default"
 )
 
-// Register sub commands
+// Register sub commands.
 func init() {
 	cmd := getCmdStackDeploy()
 	addFlagsStackDeploy(cmd)
@@ -34,34 +52,30 @@ func init() {
 	CmdStack.AddCommand(cmd)
 }
 
+// Add flags to stack deploy command.
 func addFlagsStackDeploy(cmd *cobra.Command) {
-	cmd.Flags().BoolP("dry-run", "", false, "Validate the templates and parse the parameters but not creating the stack(s).")
-	cmd.Flags().BoolP("quiet", "q", false, "Don't print out stack creation process such as events.")
-	cmd.Flags().String("file", "", "Name of the stack configuration file (Default is './stacks.yaml')")
-	cmd.Flags().String("set", "", "Set additional variables as key=value")
-	cmd.Flags().String("env", "", "Set the environment you want to run")
-	cmd.Flags().String("stack", "", "Specify stack(s)")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "Validate the templates and parse the parameters but not creating the stacks")
+	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
+	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
+	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
 	cmd.Flags().String(CMD_VAULT_PASSWORD, "", "Ansible vault password, alternatively the password can be provided in environment variable ANSIBLE_VAULT_PASSWORD")
 }
 
-// cmd: create
+// cmd: stack deploy.
 func getCmdStackDeploy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "deploy stack(s)",
-		Long:  `deploy CloudFormation stack(s)`,
+		Short: "deploy stacks",
+		Long:  `deploy CloudFormation stacks`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			dryRun, _ := cmd.Flags().GetBool("dry-run")
-			quiet, _ := cmd.Flags().GetBool("quiet")
+			dryRun, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_DRY_RUN)
 
 			err := deployStacks(
-				cmd.Flags().Lookup("set").Value.String(),
-				cmd.Flags().Lookup("file").Value.String(),
-				cmd.Flags().Lookup("env").Value.String(),
-				cmd.Flags().Lookup("stack").Value.String(),
-				GetVaultPass(cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String()),
+				cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
+				cmd.Flags().Lookup(CMD_STACK_DEPLOY_ENV).Value.String(),
+				cmd.Flags().Lookup(CMD_STACK_DEPLOY_STACK).Value.String(),
+				getVaultPass(cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String()),
 				dryRun,
-				quiet,
 			)
 
 			silenceUsageOnError(cmd, err)
@@ -73,8 +87,8 @@ func getCmdStackDeploy() *cobra.Command {
 	return cmd
 }
 
-// Get vault password from either cmd or env
-func GetVaultPass(pass string) string {
+// Get vault password from either command line flag or envirnment variable.
+func getVaultPass(pass string) string {
 	if len(pass) == 0 {
 		pass = os.Getenv(ENV_VAULT_PASSWORD)
 	}
@@ -82,22 +96,110 @@ func GetVaultPass(pass string) string {
 	return pass
 }
 
-// Deploy stacks
-func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error {
+// Load key-value from a givenn environmennt folder.
+func loadEnvValues(vaultPass string, dc *conf.DeployConfig, envFolder string) (map[string]string, error) {
+	var values, envValues map[string]string
+
+	// Load key-values from "default" folder.
+	if yes, err := utils.IsDir(dc.GetEnvDirPath(STACK_DEPLOY_ENV_DEFAULT_FOLDER)); err == nil && yes {
+		values, err = conf.LoadValues(dc.GetEnvDirPath(STACK_DEPLOY_ENV_DEFAULT_FOLDER), vaultPass)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Load key-vaules from specified env folder.
+	if yes, err := utils.IsDir(dc.GetEnvDirPath(envFolder)); len(envFolder) > 0 && err == nil && yes {
+		envValues, err = conf.LoadValues(dc.GetEnvDirPath(envFolder), vaultPass)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Combine key-values by overriding default values with env values.
+	for k, v := range envValues {
+		values[k] = v
+	}
+
+	return values, nil
+}
+
+// Check if there is any cyclic dependency condition in stacks being
+// deployed and return a ordered list, providing priority to parent
+// stacks by building a graph and doing a Kahn sort.
+func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv map[string]string) (bool, []*gp.Vertice, error) {
+	// Anonymous function for creating vertice .
+	newVertice := func(name string) *gp.Vertice {
+		vertice := gp.NewVertice(name, gl.NewEdgeStore())
+		// Set vertice Id to stack name so
+		// we can search by it.
+		vertice.Value.SetId(name)
+		return vertice
+	}
+
+	// Create a directed graph.
+	g := gp.NewGraph(gp.DIRECTED, gl.NewVerticeStore())
+
+	// Loop through the stacks to create vertices.
+	for _, c := range sc {
+		// Create a node for current stack.
+		vertice := g.GetVerticeById(c.Name)
+		if vertice == nil {
+			vertice = newVertice(c.Name)
+		}
+
+		g.AddVertice(vertice)
+
+		// Load parameter file
+		content, err := utils.LoadYaml(dc.GetParamPath(c.Param))
+		if err != nil {
+			return false, nil, err
+		}
+
+		// Search for dependent stacks.
+		dep, err := parser.SearchDependancy(string(content), kv)
+		if err != nil {
+			return false, nil, err
+		}
+
+		// Add dependent stacks as nodes.
+		for _, p := range dep {
+			dv := g.GetVerticeById(p)
+
+			if dv == nil {
+				dv = newVertice(p)
+				g.AddVertice(dv)
+			}
+
+			// Add new edge to child node.
+			edge := gp.NewEdge(p, dv, gp.FROM)
+			vertice.AddEdge(edge)
+		}
+
+		// Update graph and amend the missing edges.
+		g.UpdateVertice(vertice)
+	}
+
+	return gs.Kahn(g)
+}
+
+// Deploy stacks.
+func deployStacks(f, env, named, vaultPass string, dry bool) error {
 	var err error
 
-	// Load deploy configuration file
+	// Load deploy configuration file.
 	dc, err := conf.NewDeployConfig(f)
 	if err != nil {
 		return err
 	}
 
-	// Create S3 bucket if it doesn't exist
+	// Create S3 bucket if it doesn't exist.
 	cfs3 := ctlaws.NewS3(s3.New(ctlaws.AWSSess))
 	if exist, err := cfs3.IfBucketExist(dc.S3Bucket); err != nil {
 		return err
 	} else if !exist {
 		utils.InfoPrint(fmt.Sprintf("[ warning ] s3 bucket %s doesn't exist. It will be created.", dc.S3Bucket), utils.MessageTypeInfo)
+
 		if _, err := cfs3.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(dc.S3Bucket)}); err != nil {
 			return err
 		}
@@ -105,10 +207,10 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 
 	utils.InfoPrint(fmt.Sprintf("[ info ] found s3 bucket %s", dc.S3Bucket))
 
-	// Retrieve the list of stacks
+	// Retrieve the list of stacks from comma delimited string.
 	var cmdsl []string
 	if len(named) > 0 {
-		cmdsl = strings.Split(named, " ")
+		cmdsl = strings.Split(named, ",")
 	}
 
 	sl, err := dc.GetStackList(cmdsl)
@@ -116,14 +218,14 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 		return err
 	}
 
-	// Load key-value from env folders
-	kv, err := LoadEnvValues(vaultPass, dc, env)
+	// Load key-value from env folder.
+	kv, err := loadEnvValues(vaultPass, dc, env)
 	if err != nil {
 		return err
 	}
 
-	// Check if stacks are cyclic
-	isCyclic, sorted, err := IfCircular(dc, sl, kv)
+	// Check if stacks are cyclic and sort it.
+	isCyclic, sorted, err := ifCircularStacks(dc, sl, kv)
 	if err != nil {
 		return err
 	} else if isCyclic {
@@ -133,21 +235,16 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
 
 	for _, v := range sorted {
-		var stc *conf.StackConfig
 		// Don't process if it's not in given stack list as it
-		// may contains stacks from other references.
+		// may contains stacks from other references such via
+		// tpl function.
 		stc, ok := sl[v.Value.Id()]
 		if !ok {
 			continue
 		}
 
-		// Get Parameters
-		paramTpl, err := ioutil.ReadFile(dc.GetParamPath(stc.Param))
-		if err != nil {
-			return err
-		}
-
-		paramTpl, err = utils.GetCleanYamlBytes(paramTpl)
+		// Get Parameters.
+		paramTpl, err := utils.LoadYaml(dc.GetParamPath(stc.Param))
 		if err != nil {
 			return err
 		}
@@ -155,7 +252,7 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 		// Line seperator for each stack
 		fmt.Println("")
 
-		// Parse parameter template
+		// Parse parameter template.
 		paramBytes, err := parser.Parse(string(paramTpl), kv, dc)
 		if err != nil {
 			return err
@@ -171,6 +268,24 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 			return err
 		}
 
+		// Dry run
+		if dry {
+			if _, err := stack.ValidateTemplate(dat, ""); err != nil {
+				return err
+			} else {
+				utils.InfoPrint(
+					fmt.Sprintf(
+						"[ stack | validate ] %s\t%s",
+						stc.Name,
+						"ok",
+					),
+				)
+			}
+
+			continue
+		}
+
+		// Create or update the stack.
 		var waiterType string
 		if stack.Exist(stc.Name) {
 			_, err = stack.UpdateStack(stc.Name, params, stc.Tags, dat, "")
@@ -190,90 +305,4 @@ func deployStacks(vars, f, env, named, vaultPass string, dry, quiet bool) error 
 	}
 
 	return nil
-}
-
-// Load specific environmennt values
-func LoadEnvValues(vaultPass string, dc *conf.DeployConfig, env string) (map[string]string, error) {
-	var values, envValues map[string]string
-
-	// Load key-values from "default" folder
-	if yes, err := utils.IsDir(dc.GetEnvDirPath("default")); err == nil && yes {
-		values, err = conf.LoadValues(dc.GetEnvDirPath("default"), vaultPass)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Load key-vaules from specified env folder
-	if yes, err := utils.IsDir(dc.GetEnvDirPath(env)); len(env) > 0 && err == nil && yes {
-		envValues, err = conf.LoadValues(dc.GetEnvDirPath(env), vaultPass)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Combine key-values by overriding default values with env values
-	for k, v := range envValues {
-		values[k] = v
-	}
-
-	return values, nil
-}
-
-// Build a graph an check if there is any cyclic condition
-func IfCircular(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv map[string]string) (bool, []*gp.Vertice, error) {
-	// Closure
-	newVertice := func(name string) *gp.Vertice {
-		vertice := gp.NewVertice(name, gl.NewEdgeStore())
-		vertice.Value.SetId(name)
-		return vertice
-	}
-
-	// Create a graph
-	g := gp.NewGraph(gp.DIRECTED, gl.NewVerticeStore())
-
-	for _, c := range sc {
-		// Create a node for current stack
-		vertice := g.GetVerticeById(c.Name)
-		if vertice == nil {
-			vertice = newVertice(c.Name)
-		}
-
-		g.AddVertice(vertice)
-
-		// Search for dependent stacks
-		content, err := ioutil.ReadFile(dc.GetParamPath(c.Param))
-		if err != nil {
-			return false, nil, err
-		}
-
-		content, err = utils.GetCleanYamlBytes(content)
-		if err != nil {
-			return false, nil, err
-		}
-
-		dep, err := parser.SearchDependancy(string(content), kv)
-		if err != nil {
-			return false, nil, err
-		}
-
-		// Add dependent stacks as nodes.
-		for _, p := range dep {
-			dv := g.GetVerticeById(p)
-
-			if dv == nil {
-				dv = newVertice(p)
-				g.AddVertice(dv)
-			}
-
-			// Add new edge to vertice node
-			edge := gp.NewEdge(p, dv, gp.FROM)
-			vertice.AddEdge(edge)
-		}
-
-		// Update graph and amend the missing edges
-		g.UpdateVertice(vertice)
-	}
-
-	return gs.Kahn(g)
 }

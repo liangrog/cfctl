@@ -167,7 +167,7 @@ func ScanFiles(root string, exit <-chan bool, level int) (<-chan string, <-chan 
 	return files, e
 }
 
-// Yaml cleansing such as remove comment in yaml file
+// Yaml cleansing such as remove comment in yaml file.
 func GetCleanYamlBytes(input []byte) ([]byte, error) {
 	t := make(map[interface{}]interface{})
 	if err := yaml.Unmarshal(input, &t); err != nil {
@@ -175,4 +175,16 @@ func GetCleanYamlBytes(input []byte) ([]byte, error) {
 	}
 
 	return yaml.Marshal(&t)
+}
+
+// Load yaml file and remove all comments.
+func LoadYaml(path string) ([]byte, error) {
+	var result []byte
+	// Read file.
+	result, err := ioutil.ReadFile(path)
+	if err != nil {
+		return result, err
+	}
+
+	return GetCleanYamlBytes(result)
 }
