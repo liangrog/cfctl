@@ -1,6 +1,10 @@
 # cfctl
 AWS CloudFormation DevOp tool
 
+## Docs
+Please check [![GoDoc](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
+
+
 ## Requirements
 [Desgin princples and requirements](docs/requirements.md)
 
