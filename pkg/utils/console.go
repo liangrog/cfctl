@@ -12,13 +12,11 @@ type MessageType string
 
 // Message types
 const (
-	MessageTypeInfo MessageType = "INFO"
+	MessageTypeInfo MessageType = "info"
 
-	MessageTypeWarning MessageType = "WARNING"
+	MessageTypeWarn MessageType = "warn"
 
-	MessageTypeError MessageType = "ERROR"
-
-	MessageTypeFatal MessageType = "FATAL"
+	MessageTypeError MessageType = "error"
 )
 
 // Print format types
@@ -89,7 +87,28 @@ func MsgFormat(msg string, msgType MessageType, options ...string) string {
 	return fmt.Sprintf("%s", msg)
 }
 
-// Print info
+// Generic Print info.
 func InfoPrint(s ...interface{}) error {
 	return Print(FormatCmd, s...)
+}
+
+// Print to stdout with info header.
+func StdoutInfo(s ...interface{}) error {
+	s = append([]interface{}{fmt.Sprintf("[ %s ] ", MessageTypeInfo)}, s...)
+	_, err := fmt.Print(s...)
+	return err
+}
+
+// Print to stdout with warn header.
+func StdoutWarn(s ...interface{}) error {
+	s = append([]interface{}{fmt.Sprintf("[ %s ] ", MessageTypeWarn)}, s...)
+	_, err := fmt.Print(s...)
+	return err
+}
+
+// Print to stdout with error header.
+func StdoutError(s ...interface{}) error {
+	s = append([]interface{}{fmt.Sprintf("[ %s ] ", MessageTypeError)}, s...)
+	_, err := fmt.Print(s...)
+	return err
 }

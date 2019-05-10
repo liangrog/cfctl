@@ -46,7 +46,7 @@ func getCmdVaultEncrypt() *cobra.Command {
 }
 
 func batchEncrypt(pss, pssFile string, files []string) error {
-	passwords, err := GetPasswords(pss, pssFile)
+	passwords, err := GetPasswords(pss, pssFile, false)
 	if err != nil {
 		return err
 	}

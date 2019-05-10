@@ -3,6 +3,7 @@ package aws
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
@@ -70,13 +71,20 @@ func (fc *stackFakeClient) DescribeStacks(input *cf.DescribeStacksInput) (*cf.De
 	}, nil
 }
 
+func (fc *stackFakeClient) WaitUntilStackCreateComplete(input *cf.DescribeStacksInput) error {
+	return nil
+}
+
 func (fc *stackFakeClient) DescribeStackEvents(input *cf.DescribeStackEventsInput) (*cf.DescribeStackEventsOutput, error) {
 	var events []*cf.StackEvent
 
 	e := new(cf.StackEvent).
 		SetEventId("test-event").
 		SetStackId("test-stack-id").
-		SetStackName("test")
+		SetStackName("test").
+		SetTimestamp(time.Now()).
+		SetLogicalResourceId("122345").
+		SetResourceStatus("Complete")
 
 	events = append(events, e)
 
@@ -190,12 +198,6 @@ func TestDescribeStacks(t *testing.T) {
 	assert.True(t, len(s) > 0)
 }
 
-func TestDescribeStackEvents(t *testing.T) {
-	se, err := stack.DescribeStackEvents("test")
-	assert.NoError(t, err)
-	assert.True(t, len(se) > 0)
-}
-
 func TestDetectStackDrift(t *testing.T) {
 	id, err := stack.DetectStackDrift("test")
 	assert.NoError(t, err)
@@ -212,4 +214,8 @@ func TestDescribeStackDriftDetectionStatus(t *testing.T) {
 	out, err := stack.DescribeStackDriftDetectionStatus("test")
 	assert.NoError(t, err)
 	assert.IsType(t, new(cf.DescribeStackDriftDetectionStatusOutput), out)
+}
+
+func TestPollStackEvents(t *testing.T) {
+	assert.NoError(t, stack.PollStackEvents("test", StackWaiterTypeCreate))
 }

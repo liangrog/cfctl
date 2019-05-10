@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,12 +21,6 @@ import (
 )
 
 const (
-	// Environment variable for vault password.
-	ENV_VAULT_PASSWORD = "ANSIBLE_VAULT_PASSWORD"
-
-	// Command line flag for vault password.
-	CMD_VAULT_PASSWORD = "vault-password"
-
 	// Command line flag for stacks.
 	CMD_STACK_DEPLOY_STACK = "stack"
 
@@ -54,11 +47,13 @@ func init() {
 
 // Add flags to stack deploy command.
 func addFlagsStackDeploy(cmd *cobra.Command) {
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "Vault password for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "File that contains vault passwords for encryption or decryption")
+
 	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "Validate the templates and parse the parameters but not creating the stacks")
 	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
 	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
-	cmd.Flags().String(CMD_VAULT_PASSWORD, "", "Ansible vault password, alternatively the password can be provided in environment variable ANSIBLE_VAULT_PASSWORD")
 }
 
 // cmd: stack deploy.
@@ -69,14 +64,21 @@ func getCmdStackDeploy() *cobra.Command {
 		Long:  `deploy CloudFormation stacks`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dryRun, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_DRY_RUN)
-
-			err := deployStacks(
-				cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
-				cmd.Flags().Lookup(CMD_STACK_DEPLOY_ENV).Value.String(),
-				cmd.Flags().Lookup(CMD_STACK_DEPLOY_STACK).Value.String(),
-				getVaultPass(cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String()),
-				dryRun,
+			passes, err := GetPasswords(
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD_FILE).Value.String(),
+				true,
 			)
+
+			if err == nil {
+				err = deployStacks(
+					cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
+					cmd.Flags().Lookup(CMD_STACK_DEPLOY_ENV).Value.String(),
+					cmd.Flags().Lookup(CMD_STACK_DEPLOY_STACK).Value.String(),
+					passes,
+					dryRun,
+				)
+			}
 
 			silenceUsageOnError(cmd, err)
 
@@ -87,18 +89,10 @@ func getCmdStackDeploy() *cobra.Command {
 	return cmd
 }
 
-// Get vault password from either command line flag or envirnment variable.
-func getVaultPass(pass string) string {
-	if len(pass) == 0 {
-		pass = os.Getenv(ENV_VAULT_PASSWORD)
-	}
-
-	return pass
-}
-
 // Load key-value from a givenn environmennt folder.
-func loadEnvValues(vaultPass string, dc *conf.DeployConfig, envFolder string) (map[string]string, error) {
-	var values, envValues map[string]string
+func loadEnvValues(vaultPass []string, dc *conf.DeployConfig, envFolder string) (map[string]string, error) {
+	values := make(map[string]string)
+	envValues := make(map[string]string)
 
 	// Load key-values from "default" folder.
 	if yes, err := utils.IsDir(dc.GetEnvDirPath(STACK_DEPLOY_ENV_DEFAULT_FOLDER)); err == nil && yes {
@@ -150,41 +144,45 @@ func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv
 
 		g.AddVertice(vertice)
 
-		// Load parameter file
-		content, err := utils.LoadYaml(dc.GetParamPath(c.Param))
-		if err != nil {
-			return false, nil, err
-		}
-
-		// Search for dependent stacks.
-		dep, err := parser.SearchDependancy(string(content), kv)
-		if err != nil {
-			return false, nil, err
-		}
-
-		// Add dependent stacks as nodes.
-		for _, p := range dep {
-			dv := g.GetVerticeById(p)
-
-			if dv == nil {
-				dv = newVertice(p)
-				g.AddVertice(dv)
+		// Only add other depending vertices
+		// and edges if parameters file exist.
+		if len(c.Param) > 0 {
+			// Load parameter file
+			content, err := utils.LoadYaml(dc.GetParamPath(c.Param))
+			if err != nil {
+				return false, nil, err
 			}
 
-			// Add new edge to child node.
-			edge := gp.NewEdge(p, dv, gp.FROM)
-			vertice.AddEdge(edge)
-		}
+			// Search for dependent stacks.
+			dep, err := parser.SearchDependancy(string(content), kv)
+			if err != nil {
+				return false, nil, err
+			}
 
-		// Update graph and amend the missing edges.
-		g.UpdateVertice(vertice)
+			// Add dependent stacks as nodes.
+			for _, p := range dep {
+				dv := g.GetVerticeById(p)
+
+				if dv == nil {
+					dv = newVertice(p)
+					g.AddVertice(dv)
+				}
+
+				// Add new edge to child node.
+				edge := gp.NewEdge(p, dv, gp.FROM)
+				vertice.AddEdge(edge)
+			}
+
+			// Update graph and amend the missing edges.
+			g.UpdateVertice(vertice)
+		}
 	}
 
 	return gs.Kahn(g)
 }
 
 // Deploy stacks.
-func deployStacks(f, env, named, vaultPass string, dry bool) error {
+func deployStacks(f, env, named string, vaultPass []string, dry bool) error {
 	var err error
 
 	// Load deploy configuration file.
@@ -198,14 +196,14 @@ func deployStacks(f, env, named, vaultPass string, dry bool) error {
 	if exist, err := cfs3.IfBucketExist(dc.S3Bucket); err != nil {
 		return err
 	} else if !exist {
-		utils.InfoPrint(fmt.Sprintf("[ warning ] s3 bucket %s doesn't exist. It will be created.", dc.S3Bucket), utils.MessageTypeInfo)
+		utils.StdoutWarn(fmt.Sprintf("s3 bucket %s doesn't exist. It will be created.", dc.S3Bucket))
 
 		if _, err := cfs3.CreateBucket(&s3.CreateBucketInput{Bucket: aws.String(dc.S3Bucket)}); err != nil {
 			return err
 		}
+	} else {
+		utils.StdoutInfo(fmt.Sprintf("found s3 bucket %s", dc.S3Bucket))
 	}
-
-	utils.InfoPrint(fmt.Sprintf("[ info ] found s3 bucket %s", dc.S3Bucket))
 
 	// Retrieve the list of stacks from comma delimited string.
 	var cmdsl []string
@@ -243,24 +241,27 @@ func deployStacks(f, env, named, vaultPass string, dry bool) error {
 			continue
 		}
 
-		// Get Parameters.
-		paramTpl, err := utils.LoadYaml(dc.GetParamPath(stc.Param))
-		if err != nil {
-			return err
-		}
-
 		// Line seperator for each stack
 		fmt.Println("")
 
-		// Parse parameter template.
-		paramBytes, err := parser.Parse(string(paramTpl), kv, dc)
-		if err != nil {
-			return err
-		}
-
+		// If there is parameters provided
 		params := make(map[string]string)
-		if err := yaml.Unmarshal(paramBytes, &params); err != nil {
-			return err
+		if len(stc.Param) > 0 {
+			// Get Parameters.
+			paramTpl, err := utils.LoadYaml(dc.GetParamPath(stc.Param))
+			if err != nil {
+				return err
+			}
+
+			// Parse parameter template.
+			paramBytes, err := parser.Parse(string(paramTpl), kv, dc)
+			if err != nil {
+				return err
+			}
+
+			if err := yaml.Unmarshal(paramBytes, &params); err != nil {
+				return err
+			}
 		}
 
 		dat, err := ioutil.ReadFile(dc.GetTplPath(stc.Tpl))

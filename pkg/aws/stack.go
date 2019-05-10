@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/cloudformation/cloudformationiface"
 	"github.com/liangrog/cfctl/pkg/utils"
@@ -237,34 +238,6 @@ func (s *Stack) DescribeStacks() ([]*cf.Stack, error) {
 	return out, nil
 }
 
-// Get stack event
-func (s *Stack) DescribeStackEvents(stackName string) ([]*cf.StackEvent, error) {
-	var events []*cf.StackEvent
-	var nextToken *string
-
-	for {
-		input := &cf.DescribeStackEventsInput{
-			NextToken: nextToken,
-			StackName: aws.String(stackName),
-		}
-
-		out, err := s.Client.DescribeStackEvents(input)
-		if err != nil {
-			return nil, err
-		}
-
-		events = append(events, out.StackEvents...)
-
-		if out.NextToken == nil {
-			break
-		}
-
-		nextToken = out.NextToken
-	}
-
-	return events, nil
-}
-
 // Kick off a stack drift detection process. Returns a
 // detection process Id to be used for status query
 func (s *Stack) DetectStackDrift(stackName string, resourceIds ...string) (string, error) {
@@ -396,7 +369,13 @@ func (s *Stack) PollStackEvents(stackName, waiterType string) error {
 	for {
 		// Fetch stack event and print it out.
 		if events, err := s.GetStackEvents(stackName, timestamp); err != nil {
-			return err
+			//ignore validation error due to stack doesn't exist
+			//during delete since the stack has been deleted
+			awsErr, ok := err.(awserr.Error)
+			if (waiterType != StackWaiterTypeDelete || !ok) &&
+				awsErr.Code() != "ValidationError" {
+				return err
+			}
 		} else if len(events) > 0 {
 			tmpTime := timestamp
 

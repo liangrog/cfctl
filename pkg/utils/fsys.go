@@ -177,7 +177,7 @@ func GetCleanYamlBytes(input []byte) ([]byte, error) {
 	return yaml.Marshal(&t)
 }
 
-// Load yaml file and remove all comments.
+// Load yaml file and return clean yaml bytes.
 func LoadYaml(path string) ([]byte, error) {
 	var result []byte
 	// Read file.

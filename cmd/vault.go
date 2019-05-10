@@ -18,9 +18,13 @@ import (
 var CmdVault = getCmdVault()
 
 const (
-	ENV_PASSWORD          = "CFCTL_VAULT_PASSWORD"
-	ENV_PASSWORD_FILE     = "CFCTL_VAULT_PASSWORD_FILE"
-	DEFAULT_PASSWORD_FILE = ".cfctl_vault_password"
+	ENV_VAULT_PASSWORD      = "CFCTL_VAULT_PASSWORD"
+	ENV_VAULT_PASSWORD_FILE = "CFCTL_VAULT_PASSWORD_FILE"
+
+	CMD_VAULT_PASSWORD      = "vault-password"
+	CMD_VAULT_PASSWORD_FILE = "vault-password-file"
+
+	DEFAULT_VAULT_PASSWORD_FILE = ".cfctl_vault_password"
 )
 
 // Register sub commands
@@ -39,8 +43,8 @@ func getCmdVault() *cobra.Command {
 }
 
 func addFlagsVault(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP("password", "p", "", "Password for encryption or decryption")
-	cmd.PersistentFlags().StringP("password-file", "", "", "Password file for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "Vault password for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "File that contains vault passwords for encryption or decryption")
 }
 
 // getPassword function will attempt to locate passwrod
@@ -50,7 +54,7 @@ func addFlagsVault(cmd *cobra.Command) {
 // 3. Default passwrod file in ~/.cfctl_vault_password
 //
 // Multiple passwords are seperated by ","
-func GetPasswords(pass, passFile string) ([]string, error) {
+func GetPasswords(pass, passFile string, noPrompt bool) ([]string, error) {
 	fileToSlice := func(path string) ([]string, error) {
 		text, err := ioutil.ReadFile(path)
 		if len(text) > 0 && err == nil {
@@ -71,28 +75,30 @@ func GetPasswords(pass, passFile string) ([]string, error) {
 	}
 
 	// If env CFCTL_VAULT_PASSWORD provided
-	if pass := os.Getenv(ENV_PASSWORD); len(pass) > 0 {
+	if pass := os.Getenv(ENV_VAULT_PASSWORD); len(pass) > 0 {
 		return strings.Split(pass, ","), nil
 	}
 
 	// if env CFCTL_VAULT_PASSWORD_FILE provided
-	if file := os.Getenv(ENV_PASSWORD_FILE); len(file) > 0 {
+	if file := os.Getenv(ENV_VAULT_PASSWORD_FILE); len(file) > 0 {
 		return fileToSlice(file)
 	}
 
 	// Check default password file
-	defaultFile := path.Join(utils.HomeDir(), DEFAULT_PASSWORD_FILE)
+	defaultFile := path.Join(utils.HomeDir(), DEFAULT_VAULT_PASSWORD_FILE)
 	if _, err := os.Stat(defaultFile); err == nil {
 		return fileToSlice(defaultFile)
 	}
 
 	// Prompt password if all failed
-	fmt.Print("Password: ")
-	if passwords, err := terminal.ReadPassword(int(syscall.Stdin)); err == nil {
-		// Make sure cursor start a new line
-		fmt.Print("\n")
-		if len(passwords) > 0 {
-			return strings.Split(strings.TrimSpace(string(passwords)), ","), nil
+	if !noPrompt {
+		fmt.Print("Password: ")
+		if passwords, err := terminal.ReadPassword(int(syscall.Stdin)); err == nil {
+			// Make sure cursor start a new line
+			fmt.Print("\n")
+			if len(passwords) > 0 {
+				return strings.Split(strings.TrimSpace(string(passwords)), ","), nil
+			}
 		}
 	}
 

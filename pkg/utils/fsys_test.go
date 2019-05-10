@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"bufio"
 	"io/ioutil"
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -92,4 +94,30 @@ func TestScanFiles(t *testing.T) {
 
 	err = os.RemoveAll(tmpDir)
 	assert.NoError(t, err)
+}
+
+func TestLoadYaml(t *testing.T) {
+	unixTime := time.Now().Unix()
+	tmpDir, err := ioutil.TempDir("", "test"+strconv.FormatInt(unixTime, 10))
+	assert.NoError(t, err)
+
+	_, err = ioutil.TempFile(tmpDir, "pkg-utils-test")
+	assert.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	assert.NoError(t, ioutil.WriteFile(path.Join(tmpDir, "pkg-utils-test"), []byte("test: blah\n#bascc"), 0644))
+
+	c, err := LoadYaml(path.Join(tmpDir, "pkg-utils-test"))
+	assert.NoError(t, err)
+
+	scanner := bufio.NewScanner(strings.NewReader(string(c)))
+	scanner.Split(bufio.ScanLines)
+
+	// Count the lines.
+	count := 0
+	for scanner.Scan() {
+		count++
+	}
+	// The comments in the file should be stripped out.
+	assert.Equal(t, 1, count)
 }

@@ -27,8 +27,8 @@ func TestLoadVaules(t *testing.T) {
 	assert.NoError(t, err)
 
 	ss := "secretVaule: ABCD"
-	pass := "password"
-	ssb, err := vault.Encrypt([]byte(ss), pass)
+	pass := []string{"password"}
+	ssb, err := vault.Encrypt([]byte(ss), pass[0])
 	assert.NoError(t, err)
 	_, err = sf.Write(ssb)
 	assert.NoError(t, err)
@@ -48,7 +48,7 @@ func TestLoadVaules(t *testing.T) {
 	assert.NoError(t, err)
 
 	ss = "secretVaule: EFGH"
-	ssb, err = vault.Encrypt([]byte(ss), pass)
+	ssb, err = vault.Encrypt([]byte(ss), pass[0])
 	assert.NoError(t, err)
 	_, err = sf.Write(ssb)
 	assert.NoError(t, err)

@@ -18,7 +18,7 @@ type valueResult struct {
 }
 
 // Processing given files into key-values
-func processValue(password string, paths <-chan string, out chan<- *valueResult, done <-chan bool) {
+func processValue(passwords []string, paths <-chan string, out chan<- *valueResult, done <-chan bool) {
 	var v *valueResult
 	var tv map[string]string
 
@@ -29,7 +29,14 @@ func processValue(password string, paths <-chan string, out chan<- *valueResult,
 		}
 		// If it's vault encrypted file, decrypt it
 		if vault.HasVaultHeader(dat) {
-			dat, err = vault.Decrypt(password, dat)
+			for _, pass := range passwords {
+				dat, err = vault.Decrypt(pass, dat)
+				// If found one password that works.
+				if err == nil {
+					break
+				}
+			}
+
 			if err != nil {
 				v = &valueResult{err: err}
 			}
@@ -57,7 +64,7 @@ func processValue(password string, paths <-chan string, out chan<- *valueResult,
 // Load Values from value directories.
 // The order of value override is always following
 // the lexical order of the file names
-func LoadValues(root string, password string) (map[string]string, error) {
+func LoadValues(root string, passwords []string) (map[string]string, error) {
 	// Find all files in paths
 	done := make(chan bool)
 	defer close(done)
@@ -73,7 +80,7 @@ func LoadValues(root string, password string) (map[string]string, error) {
 	c := make(chan *valueResult)
 	for i := 0; i < numProc; i++ {
 		go func() {
-			processValue(password, paths, c, done)
+			processValue(passwords, paths, c, done)
 			wg.Done()
 		}()
 	}
