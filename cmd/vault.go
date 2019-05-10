@@ -54,7 +54,7 @@ func addFlagsVault(cmd *cobra.Command) {
 // 3. Default passwrod file in ~/.cfctl_vault_password
 //
 // Multiple passwords are seperated by ","
-func GetPasswords(pass, passFile string, noPrompt bool) ([]string, error) {
+func GetPasswords(pass, passFile string, noPrompt, allowEmpty bool) ([]string, error) {
 	fileToSlice := func(path string) ([]string, error) {
 		text, err := ioutil.ReadFile(path)
 		if len(text) > 0 && err == nil {
@@ -100,6 +100,10 @@ func GetPasswords(pass, passFile string, noPrompt bool) ([]string, error) {
 				return strings.Split(strings.TrimSpace(string(passwords)), ","), nil
 			}
 		}
+	}
+
+	if allowEmpty {
+		return []string{""}, nil
 	}
 
 	return nil, errors.New("Password is empty.")

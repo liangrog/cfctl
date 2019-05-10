@@ -131,6 +131,8 @@ func (s *Stack) CreateStack(name string, params map[string]string, tags map[stri
 		return stackOutput, err
 	}
 
+	tags = tagPkgStamp(tags)
+
 	input := new(cf.CreateStackInput).
 		SetStackName(name).
 		SetParameters(s.ParamSlice(params)).
@@ -156,6 +158,8 @@ func (s *Stack) UpdateStack(name string, params map[string]string, tags map[stri
 	if err != nil {
 		return output, err
 	}
+
+	tags = tagPkgStamp(tags)
 
 	input := new(cf.UpdateStackInput).
 		SetStackName(name).
