@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -187,4 +188,20 @@ func LoadYaml(path string) ([]byte, error) {
 	}
 
 	return GetCleanYamlBytes(result)
+}
+
+// Rewrite given path by returning from
+// the first occurence of given string
+func RewritePath(from, match string) string {
+	p := strings.Split(from, "/")
+
+	var index int
+	for idx, v := range p {
+		if v == match {
+			index = idx
+			break
+		}
+	}
+
+	return path.Join(p[index:]...)
 }

@@ -121,3 +121,11 @@ func TestLoadYaml(t *testing.T) {
 	// The comments in the file should be stripped out.
 	assert.Equal(t, 1, count)
 }
+
+func TestRewritePath(t *testing.T) {
+	p := "/a/b/c/abc"
+	assert.Equal(t, "b/c/abc", RewritePath(p, "b"))
+
+	p = "/a/b/b/c/abc"
+	assert.Equal(t, "b/b/c/abc", RewritePath(p, "b"))
+}

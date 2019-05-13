@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -54,7 +55,6 @@ func getCmdS3Upload() *cobra.Command {
 
 				silenceUsageOnError(cmd, err)
 
-				fmt.Println(arg)
 				if err != nil {
 					return err
 				}
@@ -108,10 +108,12 @@ func s3Upload(objPath, bucket, prefix string, recursive bool) error {
 		numProc := 10
 		wg.Add(numProc)
 
+		startPath, _ := filepath.Abs(objPath)
+		startPath = path.Base(startPath)
 		result := make(chan *uploadResult)
 		for i := 0; i < numProc; i++ {
 			go func() {
-				uploadWorker(bucket, prefix, paths, result, done)
+				uploadWorker(bucket, prefix, startPath, paths, result, done)
 				wg.Done()
 			}()
 		}
@@ -147,7 +149,7 @@ type uploadResult struct {
 }
 
 // Worker to upload object to s3 bucket
-func uploadWorker(bucket, prefix string, paths <-chan string, result chan<- *uploadResult, done <-chan bool) {
+func uploadWorker(bucket, prefix, startPath string, paths <-chan string, result chan<- *uploadResult, done <-chan bool) {
 	cfs3 := ctlaws.NewS3(s3.New(ctlaws.AWSSess))
 
 	for p := range paths {
@@ -158,7 +160,7 @@ func uploadWorker(bucket, prefix string, paths <-chan string, result chan<- *upl
 		}
 
 		// Upload all nested template to s3
-		out, err := cfs3.Upload(bucket, path.Join(prefix, p), content)
+		out, err := cfs3.Upload(bucket, path.Join(prefix, utils.RewritePath(p, startPath)), content)
 		if err != nil {
 			result <- &uploadResult{err: err}
 			continue
