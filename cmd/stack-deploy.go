@@ -33,6 +33,9 @@ const (
 	// Command line flag for envoirnment folder.
 	CMD_STACK_DEPLOY_ENV = "env"
 
+	// Parameter parsing
+	CMD_STACK_DEPLOY_PARAM_ONLY = "param-only"
+
 	// Default environment folder name
 	STACK_DEPLOY_ENV_DEFAULT_FOLDER = "default"
 )
@@ -51,6 +54,7 @@ func addFlagsStackDeploy(cmd *cobra.Command) {
 	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "File that contains vault passwords for encryption or decryption")
 
 	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "Validate the templates and parse the parameters but not creating the stacks")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_PARAM_ONLY, "", false, "Only parsing the parameter files")
 	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
 	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
@@ -64,6 +68,7 @@ func getCmdStackDeploy() *cobra.Command {
 		Long:  `deploy CloudFormation stacks`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dryRun, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_DRY_RUN)
+			paramOnly, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_PARAM_ONLY)
 			passes, err := GetPasswords(
 				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
 				cmd.Flags().Lookup(CMD_VAULT_PASSWORD_FILE).Value.String(),
@@ -78,6 +83,7 @@ func getCmdStackDeploy() *cobra.Command {
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_STACK).Value.String(),
 					passes,
 					dryRun,
+					paramOnly,
 				)
 			}
 
@@ -183,7 +189,7 @@ func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv
 }
 
 // Deploy stacks.
-func deployStacks(f, env, named string, vaultPass []string, dry bool) error {
+func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool) error {
 	var err error
 
 	// Load deploy configuration file.
@@ -258,6 +264,13 @@ func deployStacks(f, env, named string, vaultPass []string, dry bool) error {
 			paramBytes, err := parser.Parse(string(paramTpl), kv, dc)
 			if err != nil {
 				return err
+			}
+
+			// If only parsing parameters
+			if paramOnly {
+				utils.InfoPrint("------")
+				utils.InfoPrint(string(paramBytes))
+				continue
 			}
 
 			if err := yaml.Unmarshal(paramBytes, &params); err != nil {
