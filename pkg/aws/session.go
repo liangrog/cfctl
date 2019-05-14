@@ -25,10 +25,12 @@ var (
 	// TO-DO:
 	// Investigate region picking up from env
 	AWSSess = session.Must(
-		session.NewSession(
-			&aws.Config{
-				HTTPClient: GetHttpClient(),
-				//				Region:     aws.String("ap-southeast-2"),
+		session.NewSessionWithOptions(
+			session.Options{
+				Config: aws.Config{
+					HTTPClient: GetHttpClient(),
+				},
+				SharedConfigState: session.SharedConfigEnable,
 			},
 		),
 	)
