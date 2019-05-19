@@ -1,7 +1,13 @@
-# CFCTL - an AWS CloudFormation DevOps Tool
+# CFCTL - a Simple AWS CloudFormation DevOps Tool
 CFCTL
 
 ## Features
+- Automatically detect circular dependency amongst stacks.
+- Provide file ecryption facility for encrypting secrets in variables and automatically decrypting them during deployment.
+- Configuration over convention. Provide flexibility to suit different needs in folder structure.
+- No vendor lock-in. You won't loose the ability to re-use your CloudFormations even you decide to switch to a different tool.
+- Handling nested stacks uploading.
+- Fetching stack output on the fly.
 
 ## Getting Started
 
