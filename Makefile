@@ -21,4 +21,14 @@ clean:
 fast:
 	go build -o ${APPNAME} ${LDFLAGS}
 
+linux:
+	GOOS=linux GOARCH=386 go build -v ${LDFLAGS} -o ./target/linux_386/${APPNAME}
+	GOOS=linux GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/linux_amd64/${APPNAME}
 
+darwin:
+	GOOS=darwin GOARCH=386 go build -v ${LDFLAGS} -o ./target/darwin_386/${APPNAME}
+	GOOS=darwin GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/darwin_amd64/${APPNAME}
+
+windows:
+	GOOS=windows GOARCH=386 go build -v ${LDFLAGS} -o ./target/windows_386/${APPNAME}.exe
+	GOOS=windows GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/windows_amd64/${APPNAME}.exe

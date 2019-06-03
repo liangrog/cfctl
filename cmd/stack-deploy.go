@@ -209,7 +209,7 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool)
 			return err
 		}
 	} else {
-		utils.StdoutInfo(fmt.Sprintf("found s3 bucket %s", dc.S3Bucket))
+		utils.StdoutInfo(fmt.Sprintf("found s3 bucket %s\n", dc.S3Bucket))
 	}
 
 	// Retrieve the list of stacks from comma delimited string.

@@ -31,8 +31,8 @@ func getCmdVaultDecrypt() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := batchDecrypt(
-				cmd.Flags().Lookup("password").Value.String(),
-				cmd.Flags().Lookup("password-file").Value.String(),
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD_FILE).Value.String(),
 				args,
 			)
 
@@ -61,7 +61,7 @@ func batchDecrypt(pss, pssFile string, files []string) error {
 				return
 			}
 
-			// Try very givenn password
+			// Try every given password
 			decrypted := false
 			var output []byte
 			for _, p := range pass {

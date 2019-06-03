@@ -30,8 +30,8 @@ func getCmdVaultEncrypt() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := batchEncrypt(
-				cmd.Flags().Lookup("password").Value.String(),
-				cmd.Flags().Lookup("password-file").Value.String(),
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
+				cmd.Flags().Lookup(CMD_VAULT_PASSWORD_FILE).Value.String(),
 				args,
 			)
 

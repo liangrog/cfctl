@@ -116,12 +116,6 @@ func Parse(s string, kv map[string]string, dc *conf.DeployConfig) ([]byte, error
 	// Parse cloudformation stack output
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
 	funcStackOutput := func(name, key string) (string, error) {
-		fmt.Printf(
-			"[ stack | output ] name: %s\tkey: %s\n",
-			name,
-			key,
-		)
-
 		stack, err := stack.DescribeStack(name)
 		if err != nil {
 			return "", err
@@ -130,6 +124,13 @@ func Parse(s string, kv map[string]string, dc *conf.DeployConfig) ([]byte, error
 		for _, out := range stack.Outputs {
 			// Check both key and export name
 			if *out.OutputKey == key || (out.ExportName != nil && *out.ExportName == key) {
+				fmt.Printf(
+					"[ stack | stack-output ] name: %s\tkey: %s\tvalue: %s\n",
+					name,
+					key,
+					*out.OutputValue,
+				)
+
 				return *out.OutputValue, nil
 			}
 		}

@@ -1,10 +1,9 @@
 package cmd
 
 import (
-	_ "bufio"
+	"bufio"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -56,12 +55,26 @@ func addFlagsVault(cmd *cobra.Command) {
 // Multiple passwords are seperated by ","
 func GetPasswords(pass, passFile string, noPrompt, allowEmpty bool) ([]string, error) {
 	fileToSlice := func(path string) ([]string, error) {
-		text, err := ioutil.ReadFile(path)
-		if len(text) > 0 && err == nil {
-			return strings.Split(string(text), ","), nil
+		var result []string
+		file, err := os.Open(path)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if len(line) > 0 {
+				result = append(result, (strings.Split(line, ","))...)
+			}
 		}
 
-		return nil, err
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+
+		return result, nil
 	}
 
 	// If password option provided

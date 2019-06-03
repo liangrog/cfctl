@@ -29,16 +29,19 @@ func processValue(passwords []string, paths <-chan string, out chan<- *valueResu
 		}
 		// If it's vault encrypted file, decrypt it
 		if vault.HasVaultHeader(dat) {
+			decrypted := false
 			for _, pass := range passwords {
-				dat, err = vault.Decrypt(pass, dat)
-				// If found one password that works.
-				if err == nil {
+				if dat, err = vault.Decrypt(pass, dat); err == nil {
+					// If found one password that works.
+					decrypted = true
 					break
 				}
 			}
 
-			if err != nil {
-				v = &valueResult{err: err}
+			// If there is a problem, don't continue
+			if !decrypted {
+				out <- &valueResult{err: err}
+				continue
 			}
 		}
 
