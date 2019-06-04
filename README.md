@@ -2,7 +2,8 @@
 cfctl is a command line utility tool that helps to organise and manage AWS stacks that created by using CloudFormation. 
 
 ## Reason of Creation
-**TL;DR**: I just need a simple tool that:
+**TL;DR**: 
+I just need a simple command line tool can
 - facilitates writing plain CloudFormation.
 - have similar mechanism like in [Ansible](https://www.ansible.com/) to manage parameters.
 - easy command to manage CloudFormation lifecycles.
