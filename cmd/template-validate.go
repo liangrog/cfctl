@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
@@ -41,7 +42,7 @@ This command can be run recursively by using '-r' option`,
 
 			err := templateValidate(
 				cmd.Flags().Lookup("output").Value.String(),
-				args[0],
+				args,
 				recursive,
 			)
 
@@ -60,47 +61,43 @@ type validOut struct {
 }
 
 // Validate template
-func templateValidate(format, path string, recursive bool) error {
+func templateValidate(format string, paths []string, recursive bool) error {
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
-	errNum := 0
 
-	if ok, _ := utils.IsDir(path); ok {
-		files, err := utils.FindFiles(path, recursive)
-		if err != nil {
-			return err
-		}
+	for _, path := range paths {
+		if ok, _ := utils.IsDir(path); ok {
+			files, err := utils.FindFiles(path, recursive)
+			if err != nil {
+				return err
+			}
 
-		result := make(chan validOut, 10)
-		for _, file := range files {
-			go func(file string, res chan<- validOut) {
-				res <- validOut{
-					file: file,
-					err:  tplValid(stack, file),
-				}
-			}(file, result)
-		}
+			result := make(chan validOut, 10)
+			for _, file := range files {
+				go func(file string, res chan<- validOut) {
+					res <- validOut{
+						file: file,
+						err:  tplValid(stack, file),
+					}
+				}(file, result)
+			}
 
-		for j := 1; j <= len(files); j++ {
-			jobRes := <-result
-			if jobRes.err != nil {
-				errNum++
-				if err := utils.Print("", jobRes.file, jobRes.err); err != nil {
-					return err
+			for j := 1; j <= len(files); j++ {
+				jobRes := <-result
+				if jobRes.err != nil {
+					return errors.New(fmt.Sprintf("%s %s", jobRes.file, jobRes.err))
 				}
 			}
-		}
-	} else {
-		// If only to validate a file or url
-		err := tplValid(stack, path)
+		} else {
+			// If only to validate a file or url
+			err := tplValid(stack, path)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return errors.New(fmt.Sprintf("%s %s", path, err))
+			}
 		}
 	}
 
-	if errNum == 0 {
-		utils.Print(utils.FormatType(format), "No error found")
-	}
+	utils.Print(utils.FormatType(format), "No error found")
 
 	return nil
 }

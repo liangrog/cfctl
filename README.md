@@ -3,7 +3,8 @@ cfctl is a command line utility tool that helps to organise and manage AWS stack
 
 ## Reason of Creation
 **TL;DR**: 
-I just need a simple command line tool can
+
+I need a simple command line tool can
 - facilitates writing plain CloudFormation.
 - have similar mechanism like in [Ansible](https://www.ansible.com/) to manage parameters.
 - easy command to manage CloudFormation lifecycles.
@@ -32,10 +33,20 @@ cfctl piggy-backs your existing [AWSCLI](https://aws.amazon.com/cli/) credential
 ### Cheat Sheet
 #### Validate a CloudFormation Template
 ```sh
-$ cfctl template validate ./template-1.yaml                                 # Validate one local template
-$ cfctl template validate ./template-1.yaml ./template-2.yaml               # Validate multiple local template
-$ cfctl template validate https://bucket.s3.amazonaws.com/template-a.yaml   # Validate a template from internet
-$ cfctl template validate ./template-1.yaml https://bucket.s3.amazonaws.com/template-a.yaml     # Validate multiple templates reside in local and internet
+ # Validate one local template
+$ cfctl template validate ./template-1.yaml     
+
+# Validate multiple local template
+$ cfctl template validate ./template-1.yaml ./template-2.yaml
+
+# Validate all templates in a folder recursively
+$ cfctl template validate ./template -r
+
+# Validate a template from internet
+$ cfctl template validate https://bucket.s3.amazonaws.com/template-a.yaml
+
+# Validate multiple templates reside in local, internet and in a folder
+$ cfctl template validate ./template-1.yaml https://bucket.s3.amazonaws.com/template-a.yaml ./template -r
 ``` 
 
 ### Best Practice

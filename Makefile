@@ -17,20 +17,21 @@ test:
 
 clean:
 	go clean
+	rm -r target
 
 fast:
 	go build -o ${APPNAME} ${LDFLAGS}
 
 linux:
-	GOOS=linux GOARCH=386 go build -v ${LDFLAGS} -o ./target/linux/${APPNAME}-linux-386
-	GOOS=linux GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/linux/${APPNAME}-linux-amd64
+	GOOS=linux GOARCH=386 go build -v ${LDFLAGS} -o ./target/${APPNAME}-linux-386
+	GOOS=linux GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-linux-amd64
 
 darwin:
-	GOOS=darwin GOARCH=386 go build -v ${LDFLAGS} -o ./target/darwin/${APPNAME}-darwin-386
-	GOOS=darwin GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/darwin/${APPNAME}-darwin-amd64
+	GOOS=darwin GOARCH=386 go build -v ${LDFLAGS} -o ./target/${APPNAME}-darwin-386
+	GOOS=darwin GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-darwin-amd64
 
 windows:
-	GOOS=windows GOARCH=386 go build -v ${LDFLAGS} -o ./target/windows/${APPNAME}-windows-386.exe
-	GOOS=windows GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/windows/${APPNAME}-windows-amd64.exe
+	GOOS=windows GOARCH=386 go build -v ${LDFLAGS} -o ./target/${APPNAME}-windows-386.exe
+	GOOS=windows GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-windows-amd64.exe
 
 release: linux darwin windows
