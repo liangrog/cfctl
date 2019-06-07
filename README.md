@@ -27,8 +27,11 @@ I need a simple command line tool can
 2. Move it to the executables folder. For example for linux amd64: `chmod +x cfctl-linux-amd64 && sudo mv cfctl-linux-amd64 /usr/local/bin/cfctl`
 
 cfctl piggy-backs your existing [AWSCLI](https://aws.amazon.com/cli/) credential setting. If you don't have one, there are a few options:
-1. Use awscli environment [variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
-2. Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
+- Use awscli environment [variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+
+or
+
+- Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
 ### Cheat Sheet
 #### Validate a CloudFormation Template
