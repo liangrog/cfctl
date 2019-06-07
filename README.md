@@ -21,12 +21,25 @@ I just need a simple command line tool can
 ## API References  [![GoDoc](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
 
 ## Getting Started
-
 ### Installing
+1. Download the desired version base on your OS from the [releases page](https://github.com/liangrog/cfctl/releases)
+2. Move it to the executables folder. For example for linux amd64: `chmod +x cfctl-linux-amd64 && sudo mv cfctl-linux-amd64 /usr/local/bin/cfctl`
+
+cfctl piggy-backs your existing [AWSCLI](https://aws.amazon.com/cli/) credential setting. If you don't have one, there are a few options:
+1. Use awscli environment [variables](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html)
+2. Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
+
+### Cheat Sheet
+#### Validate a CloudFormation Template
+```sh
+$ cfctl template validate ./template-1.yaml                                 # Validate one local template
+$ cfctl template validate ./template-1.yaml ./template-2.yaml               # Validate multiple local template
+$ cfctl template validate https://bucket.s3.amazonaws.com/template-a.yaml   # Validate a template from internet
+$ cfctl template validate ./template-1.yaml https://bucket.s3.amazonaws.com/template-a.yaml     # Validate multiple templates reside in local and internet
+``` 
 
 ### Best Practice
 
-### Cheat Sheet
 
 
 
