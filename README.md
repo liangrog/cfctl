@@ -1,12 +1,12 @@
 # `cfctl` - a Simple AWS CloudFormation DevOps Tool
-cfctl is a command line utility tool that helps to organise and manage AWS stacks that created by using CloudFormation. 
+cfctl is a streamline command line utility that helps to organise and manage AWS stacks that created by using CloudFormation. 
 
 ## Reason of Creation
 **TL;DR**: 
 
 I need a simple command line tool can
 - facilitates writing plain CloudFormation.
-- have similar mechanism like in [Ansible](https://www.ansible.com/) to manage parameters.
+- have similar fashion like in [Ansible](https://www.ansible.com/) to manage parameters (variables).
 - easy command to manage CloudFormation lifecycles.
 
 **Long story**: You can check out my article [From lmdo to cfctl, a journey of two worlds]().
@@ -33,6 +33,8 @@ or
 
 - Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
+### Repository Struction Explain
+
 ### Cheat Sheet
 #### Validate a CloudFormation Template
 ```sh
@@ -52,21 +54,41 @@ $ cfctl template validate https://bucket.s3.amazonaws.com/template-a.yaml
 $ cfctl template validate ./template-1.yaml https://bucket.s3.amazonaws.com/template-a.yaml ./template -r
 ``` 
 
-### Best Practice
+### Manage CloudFormation Stack Lifecyle
 
+```sh
+# Deploy all stacks without using variable.
+$ cfctl stack deploy 
 
+# Deploy all stacks from a specific stack file
+$ cfctl stack deploy -f stack-file.yaml
 
+# Deploy particular stacks using variables from specific environment
+$ cfctl stack deploy --stack stack1,stack2 --env production
 
+# Deploy stacks using variables from specific environment that contains secrets and providing password file
+$ cfctl stack deploy --env production --vault-password-file path/to/password/file
 
-## Requirements
-[Desgin princples and requirements](docs/requirements.md)
+# Delete a stack
+$ cfctl stack delete stack-1
 
+# Delete multiple stacks
+$ cfctl stack delete stack-1 stack-2
 
-Trello Board
----
-[github-cfctl](https://trello.com/b/3etT9edo/github-cfctl)
+# Delete all stacks from a specific stack file
+$ cfctl stack delete -f stack-file.yaml --all
 
-## Ansible Vault
+# List all stacks in an AWS account
+$ cfctl stack list
+
+# List stacks with specifc status in an AWS account
+$ cfctl stack list --status DELETE_COMPLETE
+
+# Get a specific stack
+$ cfctl stack get --name stack-a 
+```
+
+### Encrypt/Decrypt Secret Variables
 cfctl provides file encryption/decryption implementation as per [ansible-vault 1.1 spec](https://docs.ansible.com/ansible/latest/user_guide/vault.html#vault-payload-format-1-1). The encrypted files are interchangable with ansible-vault, in other words, the files encrypted by cfctl or ansible-vault can be decrypted by either one of them.
 
 The command group is `cfctl vault`
@@ -97,3 +119,9 @@ Here are some simple examples how to use the command:
     # To decrypt
     $ cfctl vault decrypt file1 file2 file3 --password secret
 ```
+
+### Upload Files to S3 Bucket
+
+## Requirements
+[Desgin princples and requirements](docs/requirements.md)
+
