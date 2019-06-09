@@ -10,7 +10,7 @@ I need a simple command line tool can
 - easy command to manage CloudFormation lifecycles.
 - support yaml parameter file.
 
-**Long story**: You can check out my article [From lmdo to cfctl, a journey of two worlds]().
+<!-- **Long story**: You can check out my article [From lmdo to cfctl, a journey of two worlds](). -->
 
 ## Features
 - Detect circular dependency amongst stacks during deployments.
