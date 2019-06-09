@@ -6,8 +6,9 @@ cfctl is a streamline command line utility that helps to organise and manage AWS
 
 I need a simple command line tool can
 - facilitates writing plain CloudFormation.
-- have similar fashion like in [Ansible](https://www.ansible.com/) to manage parameters (variables).
+- have similar fashion like in [Ansible](https://www.ansible.com/) to manage parameters (variables) and deployment environment.
 - easy command to manage CloudFormation lifecycles.
+- support yaml parameter file.
 
 **Long story**: You can check out my article [From lmdo to cfctl, a journey of two worlds]().
 
@@ -19,7 +20,7 @@ I need a simple command line tool can
 - Handling nested stacks auto-uploading.
 - Fetching stack output on the fly.
 
-## API References  [![GoDoc](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
+## API References  [![API References](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
 
 ## Getting Started
 ### Installing
@@ -33,7 +34,131 @@ or
 
 - Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
-### Repository Struction Explain
+### Repository Structure
+The repository structure is very flexible. It's up to users` preference how they want to structure their templates, parameters and variables as long as the required values are provided in the stack file (see `StackFile Anatomy`).
+
+A simple example:
+```
+simple/
+├── params
+├── stacks.yaml
+├── templates
+└── vars
+```
+
+A more complex example:
+```
+complex/
+├── team-a
+│   ├── param
+│   │   ├── db
+│   │   └── web-server
+│   ├── stacks.yaml
+│   └── vars
+│       ├── dev
+│       └── prod
+├── team-b
+│   ├── param
+│   │   ├── db
+│   │   └── web-server
+│   ├── stacks.yaml
+│   └── vars
+│       ├── dev
+│       └── prod
+└── templates
+    ├── app
+    ├── eks
+    └── rds
+```
+
+### Varaibles
+`cfctl` provide a simple templating system that allows
+1. Use different values for the same parameter based on deployment environment. 
+2. Source values from environment variables and other stack outputs.
+3. Automatically upload nested templates and pass the s3 url to the value.
+
+Using above complex example, supposed you have a parameter file in `team-a/param/db/web.yaml`:
+```yaml
+DBName: '{{ .WebDBName }}'
+```
+Then you could provide different database names for different environment:
+`team-a/vars/dev/vars.yaml`
+```yaml
+WebDBName: dev-db
+```
+`team-a/vars/prod/vars.yaml`
+```yaml
+WebDBName: prod-db
+```
+
+When deploying stacks, using `--env prod` for example, the `team-a/vars/prod/vars.yaml` will be used.
+
+**Tips:** 
+1. You can set a globle value to a var by creating a folder with name `default` under `vars` folder for example. Every variables in the `default` folder will be loaded first.
+2. The var files` name can be anything. However if there are multiple var files in the same folder, the var files will be loaded in lexical order. The later one will override the previous one. For example, override the vars in `default` folder.
+
+Variable files can be encrypted using `cfctl vault encrypt` command. The encrypted files will be automatically decrypted during deployment. Details please see [Encrypt or Decrypt Secret Variable Files](#encrypt-or-decrypt-secret-variable-files).
+
+### Variable Functions
+#### Get values from another stack's outputs
+`'{{ stackOutput "stack-name" "value name in the outputs"}}'`
+
+#### Get values from environment variables
+`'{{ env "variable name" }}'`
+
+#### Auto-uploading nested template and pass url to value
+`'{{ tpl "rds/mysql.yaml" }}'`
+
+**NOTE:** Please strictly following the example for the quotes and space when using them. Otherwise you might encounter errors.
+
+**Tips:** 
+You could combine multiple functions. For example:
+`'{{ env "variable name" }}, {{ stackOutput "stack-name" "value name in the outputs"}}'`
+
+You could also nested functions. For example, you might have `{{ env "DB_TEMPLATE" }}`, then you could use `export DB_TEMPLATE={{ tpl "rds/mysql.yaml" }}`. 
+
+### Stack File Anatomy
+The default stack file name is stacks.yaml. You can use custom names as long as your provide it to `-f` in command.
+```yaml
+# Required: true
+#
+# AWS S3 bucket name, where the nested stack templates will be uploaded into.
+# If the bucket doesn't exist, cfctl will create it for you as long as the IAM
+# has the correct permission.
+s3Bucket: my-bucket
+
+# Required: true
+# 
+# The relative (to stack file) path of the directory where all your Cloudformation template files reside.
+templateDir: relative/path/to/template/folder
+
+# Required: true
+#
+# The relative (to stack file) path of the directory where all your templates` parameter files reside.
+paramDir: relative/path/to/parameter/folder
+
+# Required: true
+#
+# The relative (to stack file) path of the directory where all your deployment specific variables are.
+envDir: relative/path/to/deployment/vars/folder
+
+# Required: true
+#
+# The stack list
+stacks:
+  - name: stack-a           # Stack name. 
+    tpl: web-server.yaml    # Stack template file. Relative path to "templateDir": [templateDir]/web-server.yaml.
+    param: web/server.yaml  # Template parameter file. Relative path to "paramDir": [paramDir]/web/server.yaml.
+    tags:                   # Tags for the stack.
+      component: web
+  - name: stack-b           # Stack name.
+    tpl: rds/mysql.yaml     # Stack template file. Relative path to "templateDir": [templateDir]/rds/mysql.yaml.
+    param: web/db.yaml      # Template parameter file. Relative path to "paramDir": [paramDir]/web/db.yaml.
+    tags:                   # Tags for the stack.
+      component: web
+```
+
+**NOTE:** Variable function `env` is available for stack file.
 
 ### Cheat Sheet
 #### Validate a CloudFormation Template
@@ -55,7 +180,7 @@ $ cfctl template validate ./template-1.yaml https://bucket.s3.amazonaws.com/temp
 ``` 
 
 ### Manage CloudFormation Stack Lifecyle
-
+Creating and updating a stack shares the same command `cfctl stack deploy`.
 ```sh
 # Deploy all stacks without using variable.
 $ cfctl stack deploy 
@@ -88,21 +213,18 @@ $ cfctl stack list --status DELETE_COMPLETE
 $ cfctl stack get --name stack-a 
 ```
 
-### Encrypt/Decrypt Secret Variables
+### Upload Files to S3 Bucket
+
+### Encrypt or Decrypt Secret Variable Files
 cfctl provides file encryption/decryption implementation as per [ansible-vault 1.1 spec](https://docs.ansible.com/ansible/latest/user_guide/vault.html#vault-payload-format-1-1). The encrypted files are interchangable with ansible-vault, in other words, the files encrypted by cfctl or ansible-vault can be decrypted by either one of them.
 
-The command group is `cfctl vault`
-
 The password lookup order is defined as below:
-1. CLI option `--password`
-2. CLI option `--password-file`
+1. CLI option `--vault-password`
+2. CLI option `--vault-password-file`
 3. Environment variable `CFCTL_VAULT_PASSWORD`
 4. Environment variable `CFCTL_VAULT_PASSWORD_FILE`
 5. Default password file `$HOME/.cfctl_vault_password`
 6. Shell prompt
-
-
-Only **one** password can be used during encryption.
 
 For decryption, multiple passwords can be seperated by using **comma delimiter (,)**. For example:
 ```
@@ -119,9 +241,4 @@ Here are some simple examples how to use the command:
     # To decrypt
     $ cfctl vault decrypt file1 file2 file3 --password secret
 ```
-
-### Upload Files to S3 Bucket
-
-## Requirements
-[Desgin princples and requirements](docs/requirements.md)
 

@@ -72,7 +72,7 @@ func getCmdStackDeploy() *cobra.Command {
 			passes, err := GetPasswords(
 				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
 				cmd.Flags().Lookup(CMD_VAULT_PASSWORD_FILE).Value.String(),
-				true,
+				false,
 				true,
 			)
 
