@@ -35,7 +35,7 @@ or
 - Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
 ### Repository Structure
-The repository structure is very flexible. It's up to users` preference how they want to structure their templates, parameters and variables as long as the required values are provided in the stack file (see `StackFile Anatomy`).
+The repository structure is very flexible. It's up to users' preference how they want to structure their templates, parameters and variables as long as the required values are provided in the stack file (see [StackFile Anatomy](#stack-file-anatomy)).
 
 A simple example:
 ```
@@ -81,7 +81,8 @@ Using above complex example, supposed you have a parameter file in `team-a/param
 ```yaml
 DBName: '{{ .WebDBName }}'
 ```
-Then you could provide different database names for different environment:
+Then you could provide different database names for different environments:
+
 `team-a/vars/dev/vars.yaml`
 ```yaml
 WebDBName: dev-db
@@ -214,6 +215,19 @@ $ cfctl stack get --name stack-a
 ```
 
 ### Upload Files to S3 Bucket
+```sh
+# Upload one file
+$ cfctl s3 upload file-1 --bucket my-bucket
+
+# Upload multiple files
+$ cfctl s3 upload file-1 file-2 --bucket my-bucket
+
+# Upload everything in a folder recursively
+$ cfctl s3 upload template/web --bucket my-bucket -r
+
+# Upload files and folder
+$ cfctl s3 upload file-1 template/web --bucket my-bucket -r
+```
 
 ### Encrypt or Decrypt Secret Variable Files
 cfctl provides file encryption/decryption implementation as per [ansible-vault 1.1 spec](https://docs.ansible.com/ansible/latest/user_guide/vault.html#vault-payload-format-1-1). The encrypted files are interchangable with ansible-vault, in other words, the files encrypted by cfctl or ansible-vault can be decrypted by either one of them.
@@ -221,9 +235,9 @@ cfctl provides file encryption/decryption implementation as per [ansible-vault 1
 The password lookup order is defined as below:
 1. CLI option `--vault-password`
 2. CLI option `--vault-password-file`
-3. Environment variable `CFCTL_VAULT_PASSWORD`
-4. Environment variable `CFCTL_VAULT_PASSWORD_FILE`
-5. Default password file `$HOME/.cfctl_vault_password`
+3. Environment variable `CFCTL\_VAULT\_PASSWORD`
+4. Environment variable `CFCTL\_VAULT\_PASSWORD\_FILE`
+5. Default password file `$HOME/.cfctl\_vault\_password`
 6. Shell prompt
 
 For decryption, multiple passwords can be seperated by using **comma delimiter (,)**. For example:
