@@ -244,9 +244,9 @@ cfctl provides file encryption/decryption implementation as per [ansible-vault 1
 The password lookup order is defined as below:
 1. CLI option `--vault-password`
 2. CLI option `--vault-password-file`
-3. Environment variable `CFCTL\_VAULT\_PASSWORD`
-4. Environment variable `CFCTL\_VAULT\_PASSWORD\_FILE`
-5. Default password file `$HOME/.cfctl\_vault\_password`
+3. Environment variable `CFCTL_VAULT_PASSWORD`
+4. Environment variable `CFCTL_VAULT_PASSWORD_FILE`
+5. Default password file `$HOME/.cfctl_vault_password`
 6. Shell prompt
 
 For decryption, multiple passwords can be seperated by using **comma delimiter (,)**. For example:
