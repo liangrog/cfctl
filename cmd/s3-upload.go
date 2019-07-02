@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -27,6 +28,7 @@ func addFlagsS3Upload(cmd *cobra.Command) {
 	cmd.Flags().String("bucket", "", "S3 bucket name")
 	cmd.Flags().String("prefix", "", "The path prefix for S3 bucket that the objects will be uploaded to")
 	cmd.Flags().BoolP("recursive", "r", false, "Recursively travel the given directory for all objects")
+	cmd.Flags().String("exclude-files", "", "Exclude files with matching file names from upload. Multiple file names seperate by comma")
 }
 
 // cmd: upload
@@ -51,6 +53,7 @@ func getCmdS3Upload() *cobra.Command {
 					cmd.Flags().Lookup("bucket").Value.String(),
 					cmd.Flags().Lookup("prefix").Value.String(),
 					recursive,
+					cmd.Flags().Lookup("exclude-files").Value.String(),
 				)
 
 				silenceUsageOnError(cmd, err)
@@ -68,11 +71,16 @@ func getCmdS3Upload() *cobra.Command {
 }
 
 // Upload
-func s3Upload(objPath, bucket, prefix string, recursive bool) error {
+func s3Upload(objPath, bucket, prefix string, recursive bool, exf string) error {
 	// Default only current dir
 	level := 1
 	if recursive {
 		level = 0
+	}
+
+	var exfiles []string
+	if len(exf) > 0 {
+		exfiles = strings.Split(exf, ",")
 	}
 
 	done := make(chan bool)
@@ -113,7 +121,7 @@ func s3Upload(objPath, bucket, prefix string, recursive bool) error {
 		result := make(chan *uploadResult)
 		for i := 0; i < numProc; i++ {
 			go func() {
-				uploadWorker(bucket, prefix, startPath, paths, result, done)
+				uploadWorker(bucket, prefix, startPath, paths, result, done, exfiles)
 				wg.Done()
 			}()
 		}
@@ -149,10 +157,15 @@ type uploadResult struct {
 }
 
 // Worker to upload object to s3 bucket
-func uploadWorker(bucket, prefix, startPath string, paths <-chan string, result chan<- *uploadResult, done <-chan bool) {
+func uploadWorker(bucket, prefix, startPath string, paths <-chan string, result chan<- *uploadResult, done <-chan bool, exfiles []string) {
 	cfs3 := ctlaws.NewS3(s3.New(ctlaws.AWSSess))
 
 	for p := range paths {
+		// Skip file that's in exclusion list
+		if utils.InSlice(exfiles, filepath.Base(p)) {
+			continue
+		}
+
 		content, err := ioutil.ReadFile(p)
 		if err != nil {
 			result <- &uploadResult{err: err}

@@ -151,7 +151,7 @@ func (dc *DeployConfig) GetStackConfigByName(n string) *StackConfig {
 // Find stack config for given list
 func (dc *DeployConfig) GetStackList(l []string) (map[string]*StackConfig, error) {
 	result := make(map[string]*StackConfig)
-	if len(l) > 0 {
+	if len(l) > 0 && len(l[0]) > 0 {
 		for _, sc := range dc.Stacks {
 			for _, s := range l {
 				if sc.Name == s {

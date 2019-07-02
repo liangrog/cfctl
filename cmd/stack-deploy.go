@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -36,6 +37,9 @@ const (
 	// Parameter parsing
 	CMD_STACK_DEPLOY_PARAM_ONLY = "param-only"
 
+	// Variable override
+	CMD_STACK_DEPLOY_VARS = "vars"
+
 	// Default environment folder name
 	STACK_DEPLOY_ENV_DEFAULT_FOLDER = "default"
 )
@@ -58,6 +62,7 @@ func addFlagsStackDeploy(cmd *cobra.Command) {
 	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
 	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
+	cmd.Flags().String(CMD_STACK_DEPLOY_VARS, "", "Specify variable override in the format of 'name=value'. If multiple , use comma delimiter.")
 }
 
 // cmd: stack deploy.
@@ -84,6 +89,8 @@ func getCmdStackDeploy() *cobra.Command {
 					passes,
 					dryRun,
 					paramOnly,
+					cmd.Flags().Lookup("output").Value.String(),
+					cmd.Flags().Lookup(CMD_STACK_DEPLOY_VARS).Value.String(),
 				)
 			}
 
@@ -189,7 +196,7 @@ func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv
 }
 
 // Deploy stacks.
-func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool) error {
+func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool, output string, vars string) error {
 	var err error
 
 	// Load deploy configuration file.
@@ -229,13 +236,26 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool)
 		return err
 	}
 
-	// Check if stacks are cyclic and sort it.
-	isCyclic, sorted, err := ifCircularStacks(dc, sl, kv)
+	// Load var override
+	if len(vars) > 0 {
+		varlist := strings.Split(vars, ",")
+		for _, v := range varlist {
+			vkv := strings.Split(v, "=")
+			kv[vkv[0]] = vkv[1]
+		}
+	}
+
+	// Check all stacks in the config file if it's cyclic
+	fullList, _ := dc.GetStackList([]string{})
+	isCyclic, _, err := ifCircularStacks(dc, fullList, kv)
 	if err != nil {
 		return err
 	} else if isCyclic {
-		return errors.New("The stacks configuration contains circular dependency.")
+		return errors.New("The stack(s) in the stack list contains circular dependency.")
 	}
+
+	// Check if stacks are cyclic and sort it.
+	_, sorted, _ := ifCircularStacks(dc, sl, kv)
 
 	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
 
@@ -253,6 +273,11 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool)
 
 		// If there is parameters provided
 		params := make(map[string]string)
+		// If no parameters and only parsing parameters
+		if len(stc.Param) <= 0 && paramOnly {
+			continue
+		}
+
 		if len(stc.Param) > 0 {
 			// Get Parameters.
 			paramTpl, err := utils.LoadYaml(dc.GetParamPath(stc.Param))
@@ -266,16 +291,27 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool)
 				return err
 			}
 
-			// If only parsing parameters
-			if paramOnly {
-				utils.InfoPrint("------")
-				utils.InfoPrint(string(paramBytes))
-				continue
-			}
-
 			if err := yaml.Unmarshal(paramBytes, &params); err != nil {
 				return err
 			}
+
+			// If only parsing parameters
+			if paramOnly {
+				if output == "yaml" {
+					utils.InfoPrint("------")
+					utils.InfoPrint(string(paramBytes))
+				} else {
+					pList := stack.ParamSlice(params)
+					if pListJson, err := json.MarshalIndent(pList, "  ", "  "); err != nil {
+						return err
+					} else {
+						utils.InfoPrint(string(pListJson))
+					}
+				}
+
+				continue
+			}
+
 		}
 
 		dat, err := ioutil.ReadFile(dc.GetTplPath(stc.Tpl))
