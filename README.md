@@ -195,6 +195,12 @@ $ cfctl stack deploy --stack stack1,stack2 --env production
 # Deploy stacks using variables from specific environment that contains secrets and providing password file
 $ cfctl stack deploy --env production --vault-password-file path/to/password/file
 
+# Override environment values
+$ cfctl stack deploy --env production --vault-password-file path/to/password/file --vars name1=value1,name2=value2
+
+# Output parameters only for all stacks
+$ cfctl stack deploy --env production --param-only
+
 # Delete a stack
 $ cfctl stack delete stack-1
 
@@ -224,6 +230,9 @@ $ cfctl s3 upload file-1 file-2 --bucket my-bucket
 
 # Upload everything in a folder recursively
 $ cfctl s3 upload template/web --bucket my-bucket -r
+
+# Upload everything in a folder recursively except fileA
+$ cfctl s3 upload template/web --bucket my-bucket -r --exclude-files fileA 
 
 # Upload files and folder
 $ cfctl s3 upload file-1 template/web --bucket my-bucket -r
