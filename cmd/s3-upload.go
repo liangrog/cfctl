@@ -25,10 +25,10 @@ func init() {
 }
 
 func addFlagsS3Upload(cmd *cobra.Command) {
-	cmd.Flags().String("bucket", "", "S3 bucket name")
-	cmd.Flags().String("prefix", "", "The path prefix for S3 bucket that the objects will be uploaded to")
-	cmd.Flags().BoolP("recursive", "r", false, "Recursively travel the given directory for all objects")
-	cmd.Flags().String("exclude-files", "", "Exclude files with matching file names from upload. Multiple file names seperate by comma")
+	cmd.Flags().String(CMD_S3_UPLOAD_BUCKET, "", "S3 bucket name")
+	cmd.Flags().String(CMD_S3_UPLOAD_PREFIX, "", "The path prefix for S3 bucket that the objects will be uploaded to")
+	cmd.Flags().BoolP(CMD_S3_UPLOAD_RECURSIVE, "r", false, "Recursively travel the given directory for all objects")
+	cmd.Flags().String(CMD_S3_UPLOAD_EXCLUDE_FILES, "", "Exclude files with matching file names from upload. Multiple file names seperate by comma")
 }
 
 // cmd: upload
@@ -45,15 +45,15 @@ func getCmdS3Upload() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			recursive, _ := cmd.Flags().GetBool("recursive")
+			recursive, _ := cmd.Flags().GetBool(CMD_S3_UPLOAD_RECURSIVE)
 
 			for _, arg := range args {
 				err := s3Upload(
 					arg,
-					cmd.Flags().Lookup("bucket").Value.String(),
-					cmd.Flags().Lookup("prefix").Value.String(),
+					cmd.Flags().Lookup(CMD_S3_UPLOAD_BUCKET).Value.String(),
+					cmd.Flags().Lookup(CMD_S3_UPLOAD_PREFIX).Value.String(),
 					recursive,
-					cmd.Flags().Lookup("exclude-files").Value.String(),
+					cmd.Flags().Lookup(CMD_S3_UPLOAD_EXCLUDE_FILES).Value.String(),
 				)
 
 				silenceUsageOnError(cmd, err)

@@ -20,7 +20,7 @@ func init() {
 }
 
 func addFlagsTemplateValidate(cmd *cobra.Command) {
-	cmd.Flags().BoolP("recursive", "r", true, "Recursively validate templates for given path")
+	cmd.Flags().BoolP(CMD_TEMPLATE_VALIDATE_RECURSIVE, "r", true, "Recursively validate templates for given path")
 }
 
 // cmd: validate
@@ -38,10 +38,10 @@ This command can be run recursively by using '-r' option`,
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			recursive, _ := cmd.Flags().GetBool("recursive")
+			recursive, _ := cmd.Flags().GetBool(CMD_TEMPLATE_VALIDATE_RECURSIVE)
 
 			err := templateValidate(
-				cmd.Flags().Lookup("output").Value.String(),
+				cmd.Flags().Lookup(CMD_ROOT_OUTPUT).Value.String(),
 				args,
 				recursive,
 			)

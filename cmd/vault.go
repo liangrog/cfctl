@@ -16,16 +16,6 @@ import (
 
 var CmdVault = getCmdVault()
 
-const (
-	ENV_VAULT_PASSWORD      = "CFCTL_VAULT_PASSWORD"
-	ENV_VAULT_PASSWORD_FILE = "CFCTL_VAULT_PASSWORD_FILE"
-
-	CMD_VAULT_PASSWORD      = "vault-password"
-	CMD_VAULT_PASSWORD_FILE = "vault-password-file"
-
-	DEFAULT_VAULT_PASSWORD_FILE = ".cfctl_vault_password"
-)
-
 // Register sub commands
 func init() {
 	addFlagsVault(CmdVault)

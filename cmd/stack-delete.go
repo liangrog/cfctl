@@ -20,7 +20,7 @@ func init() {
 }
 
 func addFlagsStackDelete(cmd *cobra.Command) {
-	cmd.Flags().BoolP("all", "", false, "Delete all the stacks in the stack configuration file")
+	cmd.Flags().BoolP(CMD_STACK_DELETE_ALL, "", false, "Delete all the stacks in the stack configuration file")
 	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 }
 
@@ -31,7 +31,7 @@ func getCmdStackDelete() *cobra.Command {
 		Short: "delete cloudformation stacks",
 		Long:  `delete cloudformation stacks`,
 		Args: func(cmd *cobra.Command, args []string) error {
-			all, _ := cmd.Flags().GetBool("all")
+			all, _ := cmd.Flags().GetBool(CMD_STACK_DELETE_ALL)
 
 			if !all && len(args) < 1 {
 				return errors.New("Minimum one stack name is required")
@@ -40,7 +40,7 @@ func getCmdStackDelete() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			all, _ := cmd.Flags().GetBool("all")
+			all, _ := cmd.Flags().GetBool(CMD_STACK_DELETE_ALL)
 			err := stackDelete(
 				args,
 				all,

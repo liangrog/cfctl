@@ -19,7 +19,7 @@ func init() {
 }
 
 func addFlagsStackGet(cmd *cobra.Command) {
-	cmd.Flags().String("name", "n", "Get stack's details for given stack name")
+	cmd.Flags().String(CMD_STACK_GET_NAME, "n", "Get stack's details for given stack name")
 }
 
 // cmd: get
@@ -31,8 +31,8 @@ func getCmdStackGet() *cobra.Command {
 only return the detail for that stack`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := stackGet(
-				cmd.Flags().Lookup("output").Value.String(),
-				cmd.Flags().Lookup("name").Value.String(),
+				cmd.Flags().Lookup(CMD_ROOT_OUTPUT).Value.String(),
+				cmd.Flags().Lookup(CMD_STACK_GET_NAME).Value.String(),
 			)
 
 			silenceUsageOnError(cmd, err)

@@ -2,6 +2,7 @@ package conf
 
 import (
 	"io/ioutil"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -58,4 +59,7 @@ func TestLoadVaules(t *testing.T) {
 	v, ok = result["secretVaule"]
 	assert.True(t, ok)
 	assert.Equal(t, "EFGH", v)
+
+	// Clean up
+	os.RemoveAll(tmpDir)
 }

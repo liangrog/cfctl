@@ -21,29 +21,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const (
-	// Command line flag for stacks.
-	CMD_STACK_DEPLOY_STACK = "stack"
-
-	// Command line flag for configuration file.
-	CMD_STACK_DEPLOY_FILE = "file"
-
-	// Command line flag for dry run.
-	CMD_STACK_DEPLOY_DRY_RUN = "dry-run"
-
-	// Command line flag for envoirnment folder.
-	CMD_STACK_DEPLOY_ENV = "env"
-
-	// Parameter parsing
-	CMD_STACK_DEPLOY_PARAM_ONLY = "param-only"
-
-	// Variable override
-	CMD_STACK_DEPLOY_VARS = "vars"
-
-	// Default environment folder name
-	STACK_DEPLOY_ENV_DEFAULT_FOLDER = "default"
-)
-
 // Register sub commands.
 func init() {
 	cmd := getCmdStackDeploy()
@@ -89,7 +66,7 @@ func getCmdStackDeploy() *cobra.Command {
 					passes,
 					dryRun,
 					paramOnly,
-					cmd.Flags().Lookup("output").Value.String(),
+					cmd.Flags().Lookup(CMD_ROOT_OUTPUT).Value.String(),
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_VARS).Value.String(),
 				)
 			}

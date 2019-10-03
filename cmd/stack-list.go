@@ -18,7 +18,7 @@ func init() {
 }
 
 func addFlagsStackList(cmd *cobra.Command) {
-	cmd.Flags().String("status", "s", "cloudformation status filter, multiple values seperate by ','. Allowed values 'REVIEW_IN_PROGRESS, CREATE_FAILED, UPDATE_ROLLBACK_FAILED, UPDATE_ROLLBACK_IN_PROGRESS, CREATE_IN_PROGRESS, UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS, ROLLBACK_IN_PROGRESS, DELETE_COMPLETE, UPDATE_COMPLETE, UPDATE_IN_PROGRESS, DELETE_FAILED, DELETE_IN_PROGRESS, ROLLBACK_COMPLETE, ROLLBACK_FAILED, UPDATE_COMPLETE_CLEANUP_IN_PROGRESS, CREATE_COMPLETE, UPDATE_ROLLBACK_COMPLETE'")
+	cmd.Flags().String(CMD_STACK_LIST_STATUS, "s", "cloudformation status filter, multiple values seperate by ','. Allowed values 'REVIEW_IN_PROGRESS, CREATE_FAILED, UPDATE_ROLLBACK_FAILED, UPDATE_ROLLBACK_IN_PROGRESS, CREATE_IN_PROGRESS, UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS, ROLLBACK_IN_PROGRESS, DELETE_COMPLETE, UPDATE_COMPLETE, UPDATE_IN_PROGRESS, DELETE_FAILED, DELETE_IN_PROGRESS, ROLLBACK_COMPLETE, ROLLBACK_FAILED, UPDATE_COMPLETE_CLEANUP_IN_PROGRESS, CREATE_COMPLETE, UPDATE_ROLLBACK_COMPLETE'")
 }
 
 // cmd: list
@@ -31,14 +31,14 @@ func getCmdStackList() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var status []string
 
-			if cmd.Flags().Changed("status") {
+			if cmd.Flags().Changed(CMD_STACK_LIST_STATUS) {
 				status = strings.Split(
-					cmd.Flags().Lookup("status").Value.String(),
+					cmd.Flags().Lookup(CMD_STACK_LIST_STATUS).Value.String(),
 					",",
 				)
 			}
 
-			err := listStacks(cmd.Flags().Lookup("output").Value.String(), status...)
+			err := listStacks(cmd.Flags().Lookup(CMD_ROOT_OUTPUT).Value.String(), status...)
 
 			silenceUsageOnError(cmd, err)
 
