@@ -2,7 +2,7 @@
 [![Version](https://img.shields.io/github/v/release/liangrog/cfctl)](https://github.com/liangrog/cfctl/releases)
 [![GoDoc](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
 
-cfctl is a streamline command line utility that helps to organise and manage AWS stacks that created by using CloudFormation. 
+cfctl is a command line tool that helps to organise and manage AWS stacks created by using CloudFormation. 
 
 ## Reason of Creation
 **TL;DR**: 
@@ -23,7 +23,8 @@ I need a simple command line tool can
 - Handling nested stacks auto-uploading.
 - Fetching stack output on the fly.
 
-## API References  [![API References](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
+## API References  
+[Please refer to the GoDoc](https://godoc.org/github.com/liangrog/cfctl)
 
 ## Getting Started
 ### Installing
