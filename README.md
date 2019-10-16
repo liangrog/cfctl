@@ -1,4 +1,7 @@
 # `cfctl` - a Simple AWS CloudFormation DevOps Tool
+[![Version](https://img.shields.io/github/v/release/liangrog/cfctl)](https://github.com/liangrog/cfctl/releases)
+[![GoDoc](https://godoc.org/github.com/liangrog/cfctl?status.svg)](https://godoc.org/github.com/liangrog/cfctl)
+
 cfctl is a streamline command line utility that helps to organise and manage AWS stacks that created by using CloudFormation. 
 
 ## Reason of Creation
