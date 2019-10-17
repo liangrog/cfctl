@@ -38,6 +38,27 @@ or
 
 - Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
+### Enabling Shell Autocompletion
+BASH
+
+```
+source <(cfctl completion bash) # setup autocomplete in bash into the current shell, bash-completion package should be installed first.
+echo "source <(cfctl completion bash)" >> ~/.bashrc # add autocomplete permanently to your bash shell.
+```
+
+You can also use a shorthand alias for cfctl that also works with completion:
+```
+alias cf=cfctl
+complete -F __start_cfctl cf
+```
+
+ZSH
+
+```
+source <(cfctl completion zsh)  # setup autocomplete in zsh into the current shell
+echo "if [ $commands[cfctl] ]; then source <(cfctl completion zsh); fi" >> ~/.zshrc # add autocomplete permanently to your zsh shell
+```
+
 ### Repository Structure
 The repository structure is very flexible. It's up to users' preference how they want to structure their templates, parameters and variables as long as the required values are provided in the stack file (see [StackFile Anatomy](#stack-file-anatomy)).
 
