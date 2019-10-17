@@ -19,7 +19,7 @@ var (
 		This can be done by sourcing it from the .bash_profile.
 
 		Detailed instructions on how to do this are available here:
-		https://github.com/liang/cfctl/#enabling-shell-autocompletion
+		https://github.com/liangrog/cfctl#enabling-shell-autocompletion
 
 		Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
 		`))
