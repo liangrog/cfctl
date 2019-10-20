@@ -223,6 +223,9 @@ $ cfctl stack deploy --env production --vault-password-file path/to/password/fil
 # Override environment values
 $ cfctl stack deploy --env production --vault-password-file path/to/password/file --vars name1=value1,name2=value2
 
+# Deploy stacks with specify tag values
+$ cfctl stack deploy --stack stack1,stack2 --tags Type=frontend
+
 # Output parameters only for all stacks
 $ cfctl stack deploy --env production --param-only
 
@@ -235,14 +238,27 @@ $ cfctl stack delete stack-1 stack-2
 # Delete all stacks from a specific stack file
 $ cfctl stack delete -f stack-file.yaml --all
 
+# Delete stacks that have specific tag values
+$ cfctl stack delete --tags Name=stack-1,Type=frontend
+
 # List all stacks in an AWS account
 $ cfctl stack list
 
 # List stacks with specifc status in an AWS account
 $ cfctl stack list --status DELETE_COMPLETE
 
-# Get a specific stack
+# Get all stack details in config file backend-infra.yaml
+$ cfctl stack get -f backend-infra.yaml
+
+# Get a specific stack 'stack-a' detail
 $ cfctl stack get --name stack-a 
+
+# Get multiple stack details
+$ cfctl stack get --name stack-a,stack-b
+
+# Get stack details with tag Name=frontend
+$ cfctl stack get --tags Name=frontend
+
 ```
 
 ### Upload Files to S3 Bucket

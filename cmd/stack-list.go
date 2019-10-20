@@ -1,12 +1,23 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	ctlaws "github.com/liangrog/cfctl/pkg/aws"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/spf13/cobra"
+)
+
+var (
+	stackListShort = i18n.T("List all stacks")
+
+	stackListLong = templates.LongDesc(i18n.T(`List all existing CloudFormation stacks`))
+
+	stackListExample = templates.Examples(i18n.T(``))
 )
 
 // Register sub commands
@@ -25,9 +36,10 @@ func addFlagsStackList(cmd *cobra.Command) {
 func getCmdStackList() *cobra.Command {
 
 	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all stacks",
-		Long:  `List all existing CloudFormation stacks`,
+		Use:     "list",
+		Short:   stackListShort,
+		Long:    stackListLong,
+		Example: fmt.Sprintf(stackListExample),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var status []string
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/google/uuid"
@@ -148,28 +149,97 @@ func (dc *DeployConfig) GetStackConfigByName(n string) *StackConfig {
 	return nil
 }
 
-// Find stack config for given list
-func (dc *DeployConfig) GetStackList(l []string) (map[string]*StackConfig, error) {
-	result := make(map[string]*StackConfig)
-	if len(l) > 0 && len(l[0]) > 0 {
-		for _, sc := range dc.Stacks {
-			for _, s := range l {
-				if sc.Name == s {
-					result[s] = sc
-				}
-			}
-		}
+// filter function type
+type stackFilter func(sc *StackConfig, s string) bool
 
-		if len(l) != len(result) {
-			return nil, errors.New("There is mismatch between selected stacks and the configuration.")
-		}
+// Filter function and value to use for
+type filterConfig struct {
+	// Needle for the filter
+	value string
 
-	} else {
-		// Return full list if no selected stacks
-		for _, sc := range dc.Stacks {
-			result[sc.Name] = sc
+	// filter function
+	funct stackFilter
+}
+
+// Filter by name
+func nameFilter(sc *StackConfig, names string) bool {
+	nameList := strings.Split(names, ",")
+	for _, name := range nameList {
+		if name == sc.Name {
+			return true
 		}
 	}
 
-	return result, nil
+	return false
+}
+
+// Tag filter
+func tagFilter(sc *StackConfig, tags string) bool {
+	tagList := strings.Split(tags, ",")
+	c := len(tagList)
+	for _, tag := range tagList {
+		tagAttr := strings.Split(tag, "=")
+		for k, v := range sc.Tags {
+			if k == tagAttr[0] && v == tagAttr[1] {
+				c--
+			}
+		}
+	}
+
+	// If all tags are matched
+	if c == 0 {
+		return true
+	}
+
+	return false
+}
+
+// Return all stack configs
+func allFilter(sc *StackConfig, all string) bool {
+	return true
+}
+
+// Get filter list
+func getFilters(f map[string]string) []filterConfig {
+	var sf []filterConfig
+
+	// If no filter given, provide allfiler
+	if f == nil || len(f) == 0 {
+		sf = append(sf, filterConfig{funct: allFilter})
+		return sf
+	}
+
+	for k, v := range f {
+		switch k {
+		case "name":
+			sf = append(sf, filterConfig{value: v, funct: nameFilter})
+		case "tag":
+			sf = append(sf, filterConfig{value: v, funct: tagFilter})
+		}
+	}
+
+	return sf
+}
+
+// Find stack config for given list
+func (dc *DeployConfig) GetStackList(f map[string]string) map[string]*StackConfig {
+	result := make(map[string]*StackConfig)
+
+	filters := getFilters(f)
+	// Get the full list in the right format
+	for _, sc := range dc.Stacks {
+		result[sc.Name] = sc
+	}
+
+	for k, sc := range result {
+		for _, f := range filters {
+			// If found not meet the given filter,
+			// remove from the result
+			if !f.funct(sc, f.value) {
+				delete(result, k)
+			}
+		}
+	}
+
+	return result
 }

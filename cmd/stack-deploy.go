@@ -14,11 +14,43 @@ import (
 	"github.com/liangrog/cfctl/pkg/conf"
 	"github.com/liangrog/cfctl/pkg/template/parser"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	gl "github.com/liangrog/ds/graph/list"
 	gp "github.com/liangrog/ds/graph/parts"
 	gs "github.com/liangrog/ds/graph/sort"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
+)
+
+var (
+	stackDeployShort = i18n.T("Create or update one or more stacks")
+
+	stackDeployLong = templates.LongDesc(i18n.T(`
+		A single command that will create or update (if exists) one or more stacks
+		depending given flags.`))
+
+	stackDeployExample = templates.Examples(i18n.T(`
+		# Deploy all stacks without using variable.
+		$ cfctl stack deploy 
+
+		# Deploy all stacks from a specific stack file
+		$ cfctl stack deploy -f stack-file.yaml
+
+		# Deploy particular stacks using variables from specific environment
+		$ cfctl stack deploy --stack stack1,stack2 --env production
+
+		# Deploy stacks using variables from specific environment that contains secrets and providing password file
+		$ cfctl stack deploy --env production --vault-password-file path/to/password/file
+
+		# Override environment values
+		$ cfctl stack deploy --env production --vault-password-file path/to/password/file --vars name1=value1,name2=value2
+
+		# Deploy stacks with specify tag values
+		$ cfctl stack deploy --stack stack1,stack2 --tags Type=frontend
+
+		# Output parameters only for all stacks
+		$ cfctl stack deploy --env production --param-only`))
 )
 
 // Register sub commands.
@@ -36,7 +68,6 @@ func addFlagsStackDeploy(cmd *cobra.Command) {
 
 	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "Validate the templates and parse the parameters but not creating the stacks")
 	cmd.Flags().BoolP(CMD_STACK_DEPLOY_PARAM_ONLY, "", false, "Only parsing the parameter files")
-	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
 	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
 	cmd.Flags().String(CMD_STACK_DEPLOY_VARS, "", "Specify variable override in the format of 'name=value'. If multiple , use comma delimiter.")
@@ -45,9 +76,10 @@ func addFlagsStackDeploy(cmd *cobra.Command) {
 // cmd: stack deploy.
 func getCmdStackDeploy() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "deploy",
-		Short: "deploy stacks",
-		Long:  `deploy CloudFormation stacks`,
+		Use:     "deploy",
+		Short:   stackDeployShort,
+		Long:    stackDeployLong,
+		Example: fmt.Sprintf(stackDeployExample),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dryRun, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_DRY_RUN)
 			paramOnly, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_PARAM_ONLY)
@@ -63,6 +95,7 @@ func getCmdStackDeploy() *cobra.Command {
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_ENV).Value.String(),
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_STACK).Value.String(),
+					cmd.Flags().Lookup(CMD_STACK_DEPLOY_TAGS).Value.String(),
 					passes,
 					dryRun,
 					paramOnly,
@@ -173,7 +206,7 @@ func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv
 }
 
 // Deploy stacks.
-func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool, output string, vars string) error {
+func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly bool, output string, vars string) error {
 	var err error
 
 	// Load deploy configuration file.
@@ -196,15 +229,23 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool,
 		utils.StdoutInfo(fmt.Sprintf("found s3 bucket %s\n", dc.S3Bucket))
 	}
 
-	// Retrieve the list of stacks from comma delimited string.
-	var cmdsl []string
+	// Retrieve the list of stacks and apply filters.
+	filters := make(map[string]string)
+
 	if len(named) > 0 {
-		cmdsl = strings.Split(named, ",")
+		filters["name"] = named
 	}
 
-	sl, err := dc.GetStackList(cmdsl)
-	if err != nil {
-		return err
+	if len(tags) > 0 {
+		filters["tag"] = tags
+	}
+
+	sl := dc.GetStackList(filters)
+
+	// If no stack found, send a warning.
+	if len(sl) == 0 {
+		utils.StdoutWarn(fmt.Sprintf("No stack found for given filters. No further actions.\n"))
+		return nil
 	}
 
 	// Load key-value from env folder.
@@ -223,7 +264,7 @@ func deployStacks(f, env, named string, vaultPass []string, dry, paramOnly bool,
 	}
 
 	// Check all stacks in the config file if it's cyclic
-	fullList, _ := dc.GetStackList([]string{})
+	fullList := dc.GetStackList(nil)
 	isCyclic, _, err := ifCircularStacks(dc, fullList, kv)
 	if err != nil {
 		return err

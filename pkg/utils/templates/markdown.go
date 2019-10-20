@@ -1,5 +1,5 @@
 /*
-File Source: https://github.com/kubernetes/kubernetes/staging/src/k8s.io/kubectl/pkg/util/templates/markdown.go
+File Source: kubernetes/staging/src/k8s.io/kubectl/pkg/util/templates/markdown.go
 
 The reason the file was copied here is that we don't want to import the whole module since
 other parts of the module are irrelevant. This will reduce cfctl package size.

@@ -3,12 +3,34 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	ctlaws "github.com/liangrog/cfctl/pkg/aws"
 	"github.com/liangrog/cfctl/pkg/conf"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/spf13/cobra"
+)
+
+var (
+	stackDeleteShort = i18n.T("Delete one or more stacks.")
+
+	stackDeleteLong = templates.LongDesc(i18n.T(`Delete one or more stacks.`))
+
+	stackDeleteExample = templates.Examples(i18n.T(`
+		# Delete a stack with name 'stack-1'
+		$ cfctl stack delete stack-1
+
+		# Delete multiple stacks with name 'stack-1' and 'stack-2'
+		$ cfctl stack delete stack-1 stack-2
+
+		# Delete all stacks from a specific stack file
+		$ cfctl stack delete --file stack-file.yaml --all
+	
+		# Delete stacks that have specific tag values
+		$ cfctl sack delete --tags Name=stack-1,Type=frontend`))
 )
 
 // Register sub commands
@@ -21,20 +43,22 @@ func init() {
 
 func addFlagsStackDelete(cmd *cobra.Command) {
 	cmd.Flags().BoolP(CMD_STACK_DELETE_ALL, "", false, "Delete all the stacks in the stack configuration file")
-	cmd.Flags().String(CMD_STACK_DEPLOY_FILE, "", "Alternative stack configuration file (Default is './stacks.yaml')")
 }
 
 // cmd: delete
 func getCmdStackDelete() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "delete cloudformation stacks",
-		Long:  `delete cloudformation stacks`,
+		Use:     "delete",
+		Short:   stackDeleteShort,
+		Long:    stackDeleteLong,
+		Example: fmt.Sprintf(stackDeleteExample),
 		Args: func(cmd *cobra.Command, args []string) error {
 			all, _ := cmd.Flags().GetBool(CMD_STACK_DELETE_ALL)
 
-			if !all && len(args) < 1 {
-				return errors.New("Minimum one stack name is required")
+			tags := cmd.Flags().Lookup(CMD_STACK_DEPLOY_TAGS).Value.String()
+
+			if !all && len(tags) == 0 && len(args) < 1 {
+				return errors.New(fmt.Sprintf("Please provide either stack name or using '--%s' or '--%s' flag", CMD_STACK_DELETE_ALL, CMD_STACK_DEPLOY_TAGS))
 			}
 
 			return nil
@@ -45,6 +69,7 @@ func getCmdStackDelete() *cobra.Command {
 				args,
 				all,
 				cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
+				cmd.Flags().Lookup(CMD_STACK_DEPLOY_TAGS).Value.String(),
 			)
 
 			silenceUsageOnError(cmd, err)
@@ -57,21 +82,40 @@ func getCmdStackDelete() *cobra.Command {
 }
 
 // Delete stacks.
-func stackDelete(stackNames []string, all bool, stackConf string) error {
+func stackDelete(stackNames []string, all bool, stackConf, tags string) error {
 	var err error
 
-	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
+	stacks := make(map[string]*conf.StackConfig)
+
+	// Load deploy configuration file.
+	dc, err := conf.NewDeployConfig(stackConf)
+	if err != nil {
+		return err
+	}
 
 	// If flag is set to all stacks, get
 	// stacks from configuration file.
 	if all {
-		stackNames, err = getAllStacksFromConfig(stackConf)
-		if err != nil {
-			return err
+		stacks = dc.GetStackList(nil)
+	} else {
+		filters := make(map[string]string)
+		if len(tags) > 0 {
+			filters["tag"] = tags
 		}
+
+		if len(stackNames) > 0 {
+			filters["name"] = strings.Join(stackNames, ",")
+		}
+
+		stacks = dc.GetStackList(filters)
 	}
 
-	for _, sn := range stackNames {
+	if len(stacks) == 0 {
+		return errors.New(fmt.Sprintf("No stack found for given filters.\n"))
+	}
+
+	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
+	for sn, _ := range stacks {
 		fmt.Println("")
 
 		// If stack name given
@@ -91,21 +135,4 @@ func stackDelete(stackNames []string, all bool, stackConf string) error {
 	}
 
 	return nil
-}
-
-// Get all stack names from configuration
-// file and return in a slice.
-func getAllStacksFromConfig(stackConf string) ([]string, error) {
-	var list []string
-	// Load deploy configuration file.
-	dc, err := conf.NewDeployConfig(stackConf)
-	if err != nil {
-		return list, err
-	}
-
-	for _, sc := range dc.Stacks {
-		list = append(list, sc.Name)
-	}
-
-	return list, nil
 }

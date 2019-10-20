@@ -137,6 +137,3 @@ func MergeValues(target, replace map[string]string) map[string]string {
 
 	return target
 }
-
-func GetDependencyTree() {
-}

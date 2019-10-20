@@ -7,6 +7,7 @@ import (
 
 	"github.com/liangrog/cfctl/pkg/utils"
 	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,6 +18,15 @@ const (
 	cfgFileExtension = ".yaml"
 )
 
+var (
+	cfctlShort = i18n.T("cfctl manages stacks' lifecycle")
+
+	cfctlLong = templates.LongDesc(i18n.T(`
+		cfctl manages AWS CloudFormation stacks' lifecycle.
+
+		For more information, please visit: https://github.com/liangrog/cfctl`))
+)
+
 var cfgFile string
 
 var Cmds = NewCmdCfctl()
@@ -25,9 +35,8 @@ var Cmds = NewCmdCfctl()
 func NewCmdCfctl() *cobra.Command {
 	cmds := &cobra.Command{
 		Use:   "cfctl",
-		Short: i18n.T("cfctl manages stacks' lifecycle"),
-		Long: i18n.T(`cfctl manages AWS CloudFormation stacks' lifecycle. 
-For more information, please visit: https://github.com/liangrog/cfctl`),
+		Short: cfctlShort,
+		Long:  cfctlLong,
 	}
 
 	return cmds

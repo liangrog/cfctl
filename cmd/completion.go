@@ -15,7 +15,7 @@ var (
 
 	completionLong = templates.LongDesc(i18n.T(`
 		Output shell completion code for the specified shell (bash or zsh). 
-		The shell code must be evaluated to provide interactive completion of cfctl commands.  
+		The shell code must be evaluated to provide interactive completion of cfctl commands.
 		This can be done by sourcing it from the .bash_profile.
 
 		Detailed instructions on how to do this are available here:

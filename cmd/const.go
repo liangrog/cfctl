@@ -49,6 +49,9 @@ const (
 	// Command line flag for envoirnment folder.
 	CMD_STACK_DEPLOY_ENV = "env"
 
+	// Command line flag for tag grouping.
+	CMD_STACK_DEPLOY_TAGS = "tags"
+
 	// Parameter parsing.
 	CMD_STACK_DEPLOY_PARAM_ONLY = "param-only"
 
