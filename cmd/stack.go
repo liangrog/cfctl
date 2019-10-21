@@ -18,8 +18,8 @@ var (
 func init() {
 	Cmds.AddCommand(CmdStack)
 
-	Cmds.PersistentFlags().StringP(CMD_STACK_DEPLOY_FILE, "f", "", "alternative stack configuration file (Default is './stacks.yaml')")
-	Cmds.PersistentFlags().StringP(CMD_STACK_DEPLOY_TAGS, "", "", "only run stacks that match the specified tags in the form of 'tag=value'. Multiple tags can be given seperated by comma, e.g. 'tag1=value1,tag2=value2'. If stack names being provided at the argument at the same time, it will use both for filtering.")
+	CmdStack.PersistentFlags().StringP(CMD_STACK_DEPLOY_FILE, "f", "", "alternative stack configuration file (Default is './stacks.yaml')")
+	CmdStack.PersistentFlags().StringP(CMD_STACK_DEPLOY_TAGS, "", "", "only run stacks that match the specified tags in the form of 'tag=value'. Multiple tags can be given seperated by comma, e.g. 'tag1=value1,tag2=value2'. If stack names being provided at the argument at the same time, it will use both for filtering.")
 }
 
 // cmd: stack
