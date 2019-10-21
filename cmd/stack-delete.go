@@ -42,7 +42,7 @@ func init() {
 }
 
 func addFlagsStackDelete(cmd *cobra.Command) {
-	cmd.Flags().BoolP(CMD_STACK_DELETE_ALL, "", false, "Delete all the stacks in the stack configuration file")
+	cmd.Flags().BoolP(CMD_STACK_DELETE_ALL, "", false, "delete all the stacks in the stack configuration file")
 }
 
 // cmd: delete

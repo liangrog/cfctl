@@ -20,7 +20,7 @@ func init() {
 }
 
 func addFlagsTemplateValidate(cmd *cobra.Command) {
-	cmd.Flags().BoolP(CMD_TEMPLATE_VALIDATE_RECURSIVE, "r", true, "Recursively validate templates for given path")
+	cmd.Flags().BoolP(CMD_TEMPLATE_VALIDATE_RECURSIVE, "r", true, "recursively validate templates for given path")
 }
 
 // cmd: validate

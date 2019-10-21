@@ -32,8 +32,8 @@ func getCmdVault() *cobra.Command {
 }
 
 func addFlagsVault(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "Vault password for encryption or decryption")
-	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "File that contains vault passwords for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "vault password for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "file that contains vault passwords for encryption or decryption")
 }
 
 // getPassword function will attempt to locate passwrod

@@ -12,6 +12,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+const Version = "v1.1.0"
+
 const (
 	// cfctl config file
 	cfgFileName      = ".cfctl"
@@ -34,9 +36,10 @@ var Cmds = NewCmdCfctl()
 // Root cmd
 func NewCmdCfctl() *cobra.Command {
 	cmds := &cobra.Command{
-		Use:   "cfctl",
-		Short: cfctlShort,
-		Long:  cfctlLong,
+		Use:     "cfctl",
+		Short:   cfctlShort,
+		Long:    cfctlLong,
+		Version: Version,
 	}
 
 	return cmds

@@ -43,7 +43,7 @@ func init() {
 }
 
 func addFlagsStackGet(cmd *cobra.Command) {
-	cmd.Flags().String(CMD_STACK_GET_NAME, "", "Get stack's details for given stack name. Multiple stack names can be given and seperated by comma, e.g 'stack-a,stack-b'")
+	cmd.Flags().String(CMD_STACK_GET_NAME, "", "get stack's details for given stack name. Multiple stack names can be given and seperated by comma, e.g 'stack-a,stack-b'")
 }
 
 // cmd: get

@@ -26,9 +26,9 @@ func init() {
 
 func addFlagsS3Upload(cmd *cobra.Command) {
 	cmd.Flags().String(CMD_S3_UPLOAD_BUCKET, "", "S3 bucket name")
-	cmd.Flags().String(CMD_S3_UPLOAD_PREFIX, "", "The path prefix for S3 bucket that the objects will be uploaded to")
-	cmd.Flags().BoolP(CMD_S3_UPLOAD_RECURSIVE, "r", false, "Recursively travel the given directory for all objects")
-	cmd.Flags().String(CMD_S3_UPLOAD_EXCLUDE_FILES, "", "Exclude files with matching file names from upload. Multiple file names seperate by comma")
+	cmd.Flags().String(CMD_S3_UPLOAD_PREFIX, "", "the path prefix for S3 bucket that the objects will be uploaded to")
+	cmd.Flags().BoolP(CMD_S3_UPLOAD_RECURSIVE, "r", false, "recursively travel the given directory for all objects")
+	cmd.Flags().String(CMD_S3_UPLOAD_EXCLUDE_FILES, "", "exclude files with matching file names from upload. Multiple file names seperate by comma")
 }
 
 // cmd: upload

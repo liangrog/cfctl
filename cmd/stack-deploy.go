@@ -66,15 +66,15 @@ func init() {
 
 // Add flags to stack deploy command.
 func addFlagsStackDeploy(cmd *cobra.Command) {
-	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "Vault password for encryption or decryption")
-	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "File that contains vault passwords for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD, "", "", "vault password for encryption or decryption")
+	cmd.PersistentFlags().StringP(CMD_VAULT_PASSWORD_FILE, "", "", "file that contains vault passwords for encryption or decryption")
 
-	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "Validate the templates and parse the parameters but not creating the stacks")
-	cmd.Flags().BoolP(CMD_STACK_DEPLOY_PARAM_ONLY, "", false, "Only parsing the parameter files")
-	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
-	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
-	cmd.Flags().String(CMD_STACK_DEPLOY_VARS, "", "Specify variable override in the format of 'name=value'. If multiple , use comma delimiter.")
-	cmd.Flags().BoolP(CMD_STACK_DEPLOY_KEEP_STACK_ON_FAILURE, "", false, "Do not delete the stack after creation fails and in ROLLBACK_COMPLETE state. Default the stack will be deleted")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_DRY_RUN, "", false, "validate the templates and parse the parameters but not creating the stacks")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_PARAM_ONLY, "", false, "only parsing the parameter files")
+	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "set enviornment folder you want to load values from")
+	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
+	cmd.Flags().String(CMD_STACK_DEPLOY_VARS, "", "specify variable override in the format of 'name=value'. If multiple , use comma delimiter.")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_KEEP_STACK_ON_FAILURE, "", false, "do not delete the stack after creation fails and in ROLLBACK_COMPLETE state. Default the stack will be deleted")
 }
 
 // cmd: stack deploy.
