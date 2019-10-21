@@ -50,7 +50,10 @@ var (
 		$ cfctl stack deploy --stack stack1,stack2 --tags Type=frontend
 
 		# Output parameters only for all stacks
-		$ cfctl stack deploy --env production --param-only`))
+		$ cfctl stack deploy --env production --param-only
+		
+		# Keeping stack when creation fails and in ROLLBACK_COMPLETE state
+		$ cfctl stack deploy --keep-stack-on-failure`))
 )
 
 // Register sub commands.
@@ -71,6 +74,7 @@ func addFlagsStackDeploy(cmd *cobra.Command) {
 	cmd.Flags().String(CMD_STACK_DEPLOY_ENV, "", "Set enviornment folder you want to load values from")
 	cmd.Flags().String(CMD_STACK_DEPLOY_STACK, "", "Specify what stacks to run. If multiple stacks, use comma delimiter. For example: stackA,stackB")
 	cmd.Flags().String(CMD_STACK_DEPLOY_VARS, "", "Specify variable override in the format of 'name=value'. If multiple , use comma delimiter.")
+	cmd.Flags().BoolP(CMD_STACK_DEPLOY_KEEP_STACK_ON_FAILURE, "", false, "Do not delete the stack after creation fails and in ROLLBACK_COMPLETE state. Default the stack will be deleted")
 }
 
 // cmd: stack deploy.
@@ -82,6 +86,7 @@ func getCmdStackDeploy() *cobra.Command {
 		Example: fmt.Sprintf(stackDeployExample),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			dryRun, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_DRY_RUN)
+			keepStack, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_KEEP_STACK_ON_FAILURE)
 			paramOnly, _ := cmd.Flags().GetBool(CMD_STACK_DEPLOY_PARAM_ONLY)
 			passes, err := GetPasswords(
 				cmd.Flags().Lookup(CMD_VAULT_PASSWORD).Value.String(),
@@ -101,6 +106,7 @@ func getCmdStackDeploy() *cobra.Command {
 					paramOnly,
 					cmd.Flags().Lookup(CMD_ROOT_OUTPUT).Value.String(),
 					cmd.Flags().Lookup(CMD_STACK_DEPLOY_VARS).Value.String(),
+					keepStack,
 				)
 			}
 
@@ -206,7 +212,7 @@ func ifCircularStacks(dc *conf.DeployConfig, sc map[string]*conf.StackConfig, kv
 }
 
 // Deploy stacks.
-func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly bool, output string, vars string) error {
+func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly bool, output string, vars string, keepStack bool) error {
 	var err error
 
 	// Load deploy configuration file.
@@ -356,10 +362,12 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 
 		// Create or update the stack.
 		var waiterType string
+		var isCreation bool
 		if stack.Exist(stc.Name) {
 			_, err = stack.UpdateStack(stc.Name, params, stc.Tags, dat, "")
 			waiterType = ctlaws.StackWaiterTypeUpdate
 		} else {
+			isCreation = true
 			_, err = stack.CreateStack(stc.Name, params, stc.Tags, dat, "")
 			waiterType = ctlaws.StackWaiterTypeCreate
 		}
@@ -372,8 +380,29 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 		}
 
 		if err := stack.PollStackEvents(stc.Name, waiterType); err != nil {
+			creationErrMsg := "ResourceNotReady: failed waiting for successful resource state"
+			if isCreation && strings.Contains(err.Error(), creationErrMsg) {
+				// Handling stack creation error at ROLLBACK_COMPLETE state.
+				s, serr := stack.DescribeStack(stc.Name)
+				if serr != nil {
+					return serr
+				}
+
+				// If creation failed and in rolled back complete state
+				if *s.StackStatus == cf.StackStatusRollbackComplete {
+					if !keepStack {
+						utils.StdoutWarn(fmt.Sprintf("Stack %s creation failed. Deleting stack...\n", stc.Name))
+						_, err = stack.DeleteStack(stc.Name)
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+
 			return err
 		}
+
 	}
 
 	return nil

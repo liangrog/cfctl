@@ -229,6 +229,9 @@ $ cfctl stack deploy --stack stack1,stack2 --tags Type=frontend
 # Output parameters only for all stacks
 $ cfctl stack deploy --env production --param-only
 
+#Keeping stack when creation fails and in ROLLBACK_COMPLETE state
+$ cfctl stack deploy --keep-stack-on-failure
+
 # Delete a stack
 $ cfctl stack delete stack-1
 

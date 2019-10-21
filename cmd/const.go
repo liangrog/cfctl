@@ -52,6 +52,9 @@ const (
 	// Command line flag for tag grouping.
 	CMD_STACK_DEPLOY_TAGS = "tags"
 
+	// Command line flag for no delete when failing to create stack
+	CMD_STACK_DEPLOY_KEEP_STACK_ON_FAILURE = "keep-stack-on-failure"
+
 	// Parameter parsing.
 	CMD_STACK_DEPLOY_PARAM_ONLY = "param-only"
 
