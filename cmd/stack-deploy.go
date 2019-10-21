@@ -365,6 +365,9 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 		}
 
 		if err != nil {
+			if excludeErrorByMessage(err, stc.Name) {
+				continue
+			}
 			return err
 		}
 
@@ -374,4 +377,16 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 	}
 
 	return nil
+}
+
+// Excluding some AWS errors.
+func excludeErrorByMessage(err error, name string) bool {
+	// No update error
+	noUpdate := "No updates are to be performed"
+	if strings.Contains(err.Error(), noUpdate) {
+		utils.StdoutInfo(fmt.Sprintf("%s for %s\n", noUpdate, name))
+		return true
+	}
+
+	return false
 }
