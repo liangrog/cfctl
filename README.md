@@ -102,6 +102,11 @@ complex/
 2. Source values from environment variables and other stack outputs.
 3. Automatically upload nested templates and pass the s3 url to the value.
 
+Notes: the yaml single line has a limit of 80 chars. If longer than that limit, please use <b>`>`</b> or <b>`|`</b>. The common error you will see if you don't use multi-line:
+```
+Error: template: 78723a9a-8820-483b-b451-753d0fb8c229:9: unclosed action
+```
+
 Using above complex example, supposed you have a parameter file in `team-a/param/db/web.yaml`:
 ```yaml
 DBName: '{{ .WebDBName }}'
