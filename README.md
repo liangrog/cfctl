@@ -189,7 +189,7 @@ stacks:
       component: web
 ```
 
-**NOTE:** Variable function `env` is available for stack file.
+**NOTE:** Variable function `env`, `awsId` and `awsIdHash` is available for stack file.
 
 ### Cheat Sheet
 #### Validate a CloudFormation Template
