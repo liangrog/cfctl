@@ -2,19 +2,15 @@ package conf
 
 import (
 	"bytes"
-	"crypto/md5"
 	"errors"
-	"fmt"
 	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"text/template"
 
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
-	ctlaws "github.com/liangrog/cfctl/pkg/aws"
+	"github.com/liangrog/cfctl/pkg/template/funcs"
 	"github.com/liangrog/cfctl/pkg/utils"
 	"gopkg.in/yaml.v2"
 )
@@ -72,38 +68,10 @@ func NewDeployConfig(file string) (*DeployConfig, error) {
 		return nil, err
 	}
 
-	// Allow using ENV function in configuration.
-	// Parse environment variable.
-	funcEnv := func(key string) string {
-		return os.Getenv(key)
-	}
-
-	cfsts := ctlaws.NewSts(sts.New(ctlaws.AWSSess))
-	// Returns AWS account id
-	funcAccountId := func() (string, error) {
-		output, err := cfsts.GetCallerId()
-		if err != nil {
-			return "", err
-		}
-
-		return *output.Account, nil
-	}
-
-	// Returns AWS hashed account id
-	funcHashId := func() (string, error) {
-		output, err := cfsts.GetCallerId()
-		if err != nil {
-			return "", err
-		}
-
-		h := md5.Sum([]byte(*output.Account))
-		return fmt.Sprintf("%x", h), nil
-	}
-
 	funcMap := template.FuncMap{
-		"env":       funcEnv,
-		"awsId":     funcAccountId,
-		"awsIdHash": funcHashId,
+		funcs.FUNC_NAME_ENV:            funcs.GetEnv,
+		funcs.FUNC_NAME_AWS_ACCOUNT_ID: funcs.AwsAccountId,
+		funcs.FUNC_NAME_HASH:           funcs.Md5,
 	}
 
 	tmpl, err := template.New(uuid.New().String()).Funcs(funcMap).Parse(string(data))

@@ -2,23 +2,19 @@ package parser
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"text/template"
 
-	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	ctlaws "github.com/liangrog/cfctl/pkg/aws"
 	"github.com/liangrog/cfctl/pkg/conf"
+	"github.com/liangrog/cfctl/pkg/template/funcs"
 )
 
 const (
-	FUNC_S3URL        = "tpl"
-	FUNC_ENV          = "env"
-	FUNC_STACK_OUTPUT = "stackOutput"
+	FUNC_S3URL = "tpl"
 )
 
 // Parse template by given function map and key values
@@ -64,17 +60,15 @@ func SearchDependancy(s string, kv map[string]string) ([]string, error) {
 		return ""
 	}
 
-	// Dummy
-	funcS3URL := func(d string) string { return "" }
-	funcEnv := func(d string) string { return "" }
-
 	funcMap := template.FuncMap{
-		FUNC_S3URL:        funcS3URL,
-		FUNC_ENV:          funcEnv,
-		FUNC_STACK_OUTPUT: funcParentStack,
+		funcs.FUNC_NAME_STACK_OUTPUT:   funcParentStack,
+		FUNC_S3URL:                     funcs.EmptyStr,
+		funcs.FUNC_NAME_ENV:            funcs.EmptyStr,
+		funcs.FUNC_NAME_AWS_ACCOUNT_ID: funcs.EmptyInput,
+		funcs.FUNC_NAME_HASH:           funcs.EmptyStr,
 	}
 
-	if _, err := doubleParse(s, funcMap, kv); err != nil {
+	if _, err := parse(s, funcMap, kv); err != nil {
 		return nil, err
 	}
 
@@ -108,43 +102,15 @@ func Parse(s string, kv map[string]string, dc *conf.DeployConfig) ([]byte, error
 		return result.Location, nil
 	}
 
-	// Parse environment variable
-	funcEnv := func(key string) string {
-		return os.Getenv(key)
-	}
-
-	// Parse cloudformation stack output
-	stack := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
-	funcStackOutput := func(name, key string) (string, error) {
-		stack, err := stack.DescribeStack(name)
-		if err != nil {
-			return "", err
-		}
-
-		for _, out := range stack.Outputs {
-			// Check both key and export name
-			if *out.OutputKey == key || (out.ExportName != nil && *out.ExportName == key) {
-				fmt.Printf(
-					"[ stack | stack-output ] name: %s\tkey: %s\tvalue: %s\n",
-					name,
-					key,
-					*out.OutputValue,
-				)
-
-				return *out.OutputValue, nil
-			}
-		}
-
-		return "", errors.New(fmt.Sprintf("There is no output key %s in stack %s.", key, name))
-	}
-
 	funcMap := template.FuncMap{
-		FUNC_S3URL:        funcS3URL,
-		FUNC_ENV:          funcEnv,
-		FUNC_STACK_OUTPUT: funcStackOutput,
+		FUNC_S3URL:                     funcS3URL,
+		funcs.FUNC_NAME_ENV:            funcs.GetEnv,
+		funcs.FUNC_NAME_STACK_OUTPUT:   funcs.GetStackOutputs,
+		funcs.FUNC_NAME_AWS_ACCOUNT_ID: funcs.AwsAccountId,
+		funcs.FUNC_NAME_HASH:           funcs.Md5,
 	}
 
-	output, err := doubleParse(s, funcMap, kv)
+	output, err := parse(s, funcMap, kv)
 
 	return output.Bytes(), err
 }
