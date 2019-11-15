@@ -119,6 +119,23 @@ func (fc *stackFakeClient) DescribeStackDriftDetectionStatus(input *cf.DescribeS
 		SetStackId("test"), nil
 }
 
+func (fc *stackFakeClient) DescribeStackResources(input *cf.DescribeStackResourcesInput) (*cf.DescribeStackResourcesOutput, error) {
+	var stackRes []*cf.StackResource
+
+	sr := &cf.StackResource{
+		LogicalResourceId: aws.String("abcd-1234"),
+		ResourceStatus:    aws.String("CREATE_COMPLETE"),
+		ResourceType:      aws.String("AWS::S3::Bucket"),
+	}
+
+	sr.SetTimestamp(time.Now())
+
+	stackRes = append(stackRes, sr)
+
+	return new(cf.DescribeStackResourcesOutput).
+		SetStackResources(stackRes), nil
+}
+
 func TestTagSlice(t *testing.T) {
 	data := map[string]string{
 		"Name": "testing",
@@ -218,4 +235,10 @@ func TestDescribeStackDriftDetectionStatus(t *testing.T) {
 
 func TestPollStackEvents(t *testing.T) {
 	assert.NoError(t, stack.PollStackEvents("test", StackWaiterTypeCreate))
+}
+
+func TestGetStackResources(t *testing.T) {
+	out, err := stack.GetStackResources("test-stack")
+	assert.NoError(t, err)
+	assert.Equal(t, aws.StringValue(out[0].LogicalResourceId), "abcd-1234")
 }

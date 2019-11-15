@@ -425,3 +425,17 @@ func (s *Stack) PollStackEvents(stackName, waiterType string) error {
 
 	return nil
 }
+
+// Get stack resources
+func (s *Stack) GetStackResources(stackName string) ([]*cf.StackResource, error) {
+	input := &cf.DescribeStackResourcesInput{
+		StackName: aws.String(stackName),
+	}
+
+	output, err := s.Client.DescribeStackResources(input)
+	if err != nil {
+		return nil, err
+	}
+
+	return output.StackResources, nil
+}

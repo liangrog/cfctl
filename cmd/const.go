@@ -67,8 +67,13 @@ const (
 	// Command line flag for stack delete all.
 	CMD_STACK_DELETE_ALL = "all"
 
+	CMD_STACK_DELETE_RETAIN_RESOURCES = "retain-resources"
+
 	// Command line flag for stack get name.
 	CMD_STACK_GET_NAME = "name"
+
+	// Command line flag for stack get-resources name.
+	CMD_STACK_GET_RESOURCES_NAME = "name"
 
 	// Command line flag for stack list status.
 	CMD_STACK_LIST_STATUS = "status"

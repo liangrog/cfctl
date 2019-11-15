@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	cf "github.com/aws/aws-sdk-go/service/cloudformation"
 	ctlaws "github.com/liangrog/cfctl/pkg/aws"
 	"github.com/liangrog/cfctl/pkg/conf"
@@ -43,6 +44,7 @@ func init() {
 
 func addFlagsStackDelete(cmd *cobra.Command) {
 	cmd.Flags().BoolP(CMD_STACK_DELETE_ALL, "", false, "delete all the stacks in the stack configuration file")
+	cmd.Flags().String(CMD_STACK_DELETE_RETAIN_RESOURCES, "", "retain resources during stack delete, e.g. S3 buckets that are not empty. Multiple resources seperated by comma.")
 }
 
 // cmd: delete
@@ -70,6 +72,7 @@ func getCmdStackDelete() *cobra.Command {
 				all,
 				cmd.Flags().Lookup(CMD_STACK_DEPLOY_FILE).Value.String(),
 				cmd.Flags().Lookup(CMD_STACK_DEPLOY_TAGS).Value.String(),
+				cmd.Flags().Lookup(CMD_STACK_DELETE_RETAIN_RESOURCES).Value.String(),
 			)
 
 			silenceUsageOnError(cmd, err)
@@ -82,7 +85,7 @@ func getCmdStackDelete() *cobra.Command {
 }
 
 // Delete stacks.
-func stackDelete(stackNames []string, all bool, stackConf, tags string) error {
+func stackDelete(stackNames []string, all bool, stackConf, tags, retainRes string) error {
 	var err error
 
 	stacks := make(map[string]*conf.StackConfig)
@@ -124,7 +127,24 @@ func stackDelete(stackNames []string, all bool, stackConf, tags string) error {
 			continue
 		}
 
-		_, err = stack.DeleteStack(sn)
+		// Find retaining resources
+		var srr []string
+		if len(retainRes) > 0 {
+			// Get stack resources
+			resources, err := stack.GetStackResources(sn)
+			if err != nil {
+				return err
+			}
+
+			// If logical ids exsits in the given retain resources list
+			for _, sr := range resources {
+				if strings.Contains(retainRes, aws.StringValue(sr.LogicalResourceId)) {
+					srr = append(srr, aws.StringValue(sr.LogicalResourceId))
+				}
+			}
+		}
+
+		_, err = stack.DeleteStack(sn, srr...)
 		if err != nil {
 			return err
 		}

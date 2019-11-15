@@ -93,6 +93,11 @@ func GetPasswords(pass, passFile string, noPrompt, allowEmpty bool) ([]string, e
 		return fileToSlice(defaultFile)
 	}
 
+	// If empty password is allowed, return
+	if allowEmpty {
+		return []string{""}, nil
+	}
+
 	// Prompt password if all failed
 	if !noPrompt {
 		fmt.Print("Password: ")
@@ -103,10 +108,6 @@ func GetPasswords(pass, passFile string, noPrompt, allowEmpty bool) ([]string, e
 				return strings.Split(strings.TrimSpace(string(passwords)), ","), nil
 			}
 		}
-	}
-
-	if allowEmpty {
-		return []string{""}, nil
 	}
 
 	return nil, errors.New("Password is empty.")
