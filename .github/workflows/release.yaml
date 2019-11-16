@@ -38,9 +38,9 @@ jobs:
           path: target
 
   release:
-      name: release
-      runs-on: ubuntu-latest
-      needs: build
+    name: release
+    runs-on: ubuntu-latest
+    needs: build
       - name: Download Artifacts
         uses: actions/download-artifact@v1
         with:
