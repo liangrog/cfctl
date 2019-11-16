@@ -32,7 +32,7 @@ jobs:
       - name: Build Distros
         run: make release
       - name: Upload Artifacts
-      - uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@master
         with:
           name: target
           path: target
