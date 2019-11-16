@@ -1,0 +1,105 @@
+---
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+      - name: Check out code
+        uses: actions/checkout@v1
+      - name: Unit test
+        run: make test
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+      - name: Checkout Code
+        uses: actions/checkout@v1
+      - name: Build Distros
+        run: make release
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+            lorem ipsum
+          draft: true
+          prerelease: false
+      - name: Upload Linux 386 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-linux-386
+          asset_content_type: application/octet-stream
+      - name: Upload Linux AMD64 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-linux-amd64
+          asset_content_type: application/octet-stream
+      - name: Upload Mac 386 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-darwin-386
+          asset_content_type: application/octet-stream
+      - name: Upload Mac AMD64 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-linux-amd64
+          asset_content_type: application/octet-stream
+      - name: Upload Windows 386 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-windows-386
+          asset_content_type: application/octet-stream
+      - name: Upload Windows AMD64 binary
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} 
+          asset_path: ./target
+          asset_name: cfctl-windows-amd64
+          asset_content_type: application/octet-stream
