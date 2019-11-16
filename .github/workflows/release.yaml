@@ -58,6 +58,8 @@ jobs:
             lorem ipsum
           draft: true
           prerelease: false
+      - name: test
+        run: ls -alt && ls -alt target
       - name: Upload Linux 386 binary
         uses: actions/upload-release-asset@v1.0.1
         env:
