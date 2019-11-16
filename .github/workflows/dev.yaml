@@ -17,5 +17,5 @@ jobs:
         uses: actions/checkout@v1
       # This step uses GitHub's hello-world-javascript-action: https://github.com/actions/hello-world-javascript-action
       - name: Unit test
-        uses: make test
+        run: make test
 
