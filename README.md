@@ -43,6 +43,8 @@ or
 
 - Create two files: `~/.aws/credentials` and `~/.aws/config` as per [instruction](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). 
 
+As a minimum, your IAM user must have permission to create S3 bucket. In addition, you will need permissions for AWS resources that your Cloudformation requires.
+
 ### Enabling Shell Autocompletion
 BASH
 
@@ -64,4 +66,19 @@ source <(cfctl completion zsh)  # setup autocomplete in zsh into the current she
 echo "if [ $commands[cfctl] ]; then source <(cfctl completion zsh); fi" >> ~/.zshrc # add autocomplete permanently to your zsh shell
 ```
 
+### Quick Start
+1. Create a sample repository by running below command. The Command will create a default repository structure (which you can change it to your liking).
+```
+$ cfctl init
+$
+$ tree
+```
 
+2. 
+
+## Documentations
+- [Stack Configuration File](docs/config.md)
+- [Directory Structure](docs/directory.md)
+- [Parameters](docs/parameters.md)
+- [Secrects Encryption](docs/secrets.md)
+- [Cheatsheet](docs/cheatsheet.md)
