@@ -71,10 +71,34 @@ echo "if [ $commands[cfctl] ]; then source <(cfctl completion zsh); fi" >> ~/.zs
 ```
 $ cfctl init
 $
-$ tree
+$ tree cfctl-sample
+cfctl-sample
+├── deploy
+│   └── sample
+│       ├── environments
+│       │   └── default
+│       │       └── var.yaml
+│       ├── parameters
+│       │   └── s3.yaml
+│       └── stacks.yaml
+└── templates
+    └── s3-encrypted.yaml
 ```
 
-2. 
+2. Run
+```
+# option 1
+$ cd cfctl-sample/deploy/sample
+$ cfctl stack deploy
+
+# option 2
+$ cfctl stack -f cfctl-sample/deploy/sample/stacks.yaml
+``` 
+
+3. Clean up
+```
+$ cfctl stack delete --all
+```
 
 ## Documentations
 - [Stack Configuration File](docs/config.md)

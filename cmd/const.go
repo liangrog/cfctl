@@ -21,6 +21,12 @@ const (
 	// Default vault password file name.
 	DEFAULT_VAULT_PASSWORD_FILE = ".cfctl_vault_password"
 
+	// Init repository folde path
+	CMD_INIT_PATH = "path"
+
+	// Init repository folder name
+	CMD_INIT_NAME = "name"
+
 	// S3
 
 	// Command line flag for bucket.
