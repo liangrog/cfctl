@@ -1,6 +1,9 @@
 ---
 name: Development
-on: [push]
+on:
+  push:
+    branches:
+      - '*'
 
 jobs:
   test:
