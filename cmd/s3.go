@@ -15,7 +15,7 @@ func init() {
 func getCmdS3() *cobra.Command {
 	return &cobra.Command{
 		Use:   "s3",
-		Short: "s3 utilities",
-		Long:  `Utilities for s3`,
+		Short: "S3 utilities",
+		Long:  `Utilities for S3 bucket`,
 	}
 }

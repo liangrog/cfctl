@@ -24,7 +24,10 @@ var (
 
 	vaultEditLong = templates.LongDesc(i18n.T(`
 		Edit an encrypted vault file by openning a seperate
-		terminal using default editor.`))
+		terminal using default editor. 'CFCTL_VAULT_PASSWORD'
+		and 'CFCTL_VAULT_PASSWORD_FILE' environment variables 
+		can be used to replace '--vault-password' and 
+		'--vault-password-file' flags.`))
 
 	vaultEditExample = templates.Examples(i18n.T(`
 		# Edit a vault file named 'secrect.yaml'

@@ -18,10 +18,10 @@ All passwords will be tried until one that works.
 
 Here are some simple examples how to use the command:
 ```
-    # To encrypt
-    $ cfctl vault encrypt file1 file2 file3 --password secret
+# To encrypt
+$ cfctl vault encrypt file1 
 
-    # To decrypt
-    $ cfctl vault decrypt file1 file2 file3 --password secret
+# To decrypt
+$ cfctl vault decrypt file1 file2 file3 --password secret
 ```
 

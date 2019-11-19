@@ -13,7 +13,32 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	ctlaws "github.com/liangrog/cfctl/pkg/aws"
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/spf13/cobra"
+)
+
+var (
+	s3UploadShort = i18n.T("Upload files to S3.")
+
+	s3UploadLong = templates.LongDesc(i18n.T(`
+		Upload files to S3 bucket. Overwrite files if exist.`))
+
+	s3UploadExample = templates.Examples(i18n.T(`
+		# Upload one file
+		$ cfctl s3 upload file-1 --bucket my-bucket
+
+		# Upload multiple files
+		$ cfctl s3 upload file-1 file-2 --bucket my-bucket
+
+		# Upload everything in a folder recursively
+		$ cfctl s3 upload template/web --bucket my-bucket -r
+
+		# Upload everything in a folder recursively except fileA
+		$ cfctl s3 upload template/web --bucket my-bucket -r --exclude-files fileA
+
+		# Upload files and folder
+		$ cfctl s3 upload file-1 template/web --bucket my-bucket -r`))
 )
 
 // Register sub commands
@@ -34,9 +59,10 @@ func addFlagsS3Upload(cmd *cobra.Command) {
 // cmd: upload
 func getCmdS3Upload() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "upload",
-		Short: "upload objects to s3 bucket",
-		Long:  `upload objects to s3 bucket`,
+		Use:     "upload",
+		Short:   s3UploadShort,
+		Long:    s3UploadLong,
+		Example: fmt.Sprintf(s3UploadExample),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) < 1 {
 				return errors.New("Missing local objects path")

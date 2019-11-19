@@ -1,32 +1,32 @@
-### Repository Structure
-The repository structure is very flexible. It's up to users' preference how they want to structure their templates, parameters and variables as long as the required values are provided in the stack file (see [StackFile Anatomy](#stack-file-anatomy)).
+# Repository Structure
+Because the three directories: `templateDir`, `envDir` and `paramDir` are configurable in [stack file](config.md) and all files in the sub directories of those three main directories are being referenced using relative path, users have all the freedom to decide how they would like to name, or organise directories, files.
 
 A simple example:
 ```
 simple/
-├── params
+├── parameters
 ├── stacks.yaml
 ├── templates
-└── vars
+└── environments
 ```
 
 A more complex example:
 ```
 complex/
 ├── team-a
-│   ├── param
+│   ├── parameters
 │   │   ├── db
 │   │   └── web-server
 │   ├── stacks.yaml
-│   └── vars
-│       ├── dev
+│   └── environments
+│       ├── default
 │       └── prod
 ├── team-b
-│   ├── param
+│   ├── parameters
 │   │   ├── db
 │   │   └── web-server
 │   ├── stacks.yaml
-│   └── vars
+│   └── environments
 │       ├── dev
 │       └── prod
 └── templates
@@ -35,4 +35,5 @@ complex/
     └── rds
 ```
 
+There is only one exception that `cfctl` uses convention: if a `default` folder exists in `envDir`, all variables in this folder will be loaded first before overwritten by other variable files on every deployment.
 

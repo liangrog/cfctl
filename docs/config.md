@@ -1,4 +1,4 @@
-### Stack File Anatomy
+# Stack File Anatomy
 The default stack file name is stacks.yaml. You can use custom names as long as your provide it to `-f` in command.
 ```yaml
 # Required: true
@@ -20,8 +20,8 @@ paramDir: relative/path/to/parameter/folder
 
 # Required: true
 #
-# The relative (to stack file) path of the directory where all your deployment specific variables are.
-envDir: relative/path/to/deployment/vars/folder
+# The relative (to stack file) path of the directory where all your environment specific variables are.
+envDir: relative/path/to/environment/vars/folder
 
 # Required: true
 #
@@ -39,6 +39,17 @@ stacks:
       component: web
 ```
 
-**NOTE:** Variable function `env`, `awsAccountId` and `hash` is available for stack file.
+# Functions
+Apart from standard go template functions, there are three additional functions can be use in stack file:
+
+1. "{{ env ENV_VARIABLE_NAME}}" will parsing environment variabe.
+2. "{{ awsAccountId }}" will get your AWS account ID for your current IAM user.
+3. "{{ printf "%s" "test" | hash }}" will hash the string "test" using md5
 
 
+For example, for AWS S3 buckets that's unique by account, one can do:
+```
+...
+s3Bucket: "my-bucket-{{ awsAccountId | printf "%s" | hash }}"
+...
+```

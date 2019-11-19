@@ -85,14 +85,10 @@ cfctl-sample
     └── s3-encrypted.yaml
 ```
 
-2. Run
+2. Deploy example stack which creates a new s3 bucket.
 ```
-# option 1
 $ cd cfctl-sample/deploy/sample
 $ cfctl stack deploy
-
-# option 2
-$ cfctl stack -f cfctl-sample/deploy/sample/stacks.yaml
 ``` 
 
 3. Clean up
@@ -103,6 +99,6 @@ $ cfctl stack delete --all
 ## Documentations
 - [Stack Configuration File](docs/config.md)
 - [Directory Structure](docs/directory.md)
-- [Parameters](docs/parameters.md)
+- [Parameter file template](docs/parameters.md)
 - [Secrects Encryption](docs/secrets.md)
 - [Cheatsheet](docs/cheatsheet.md)

@@ -6,8 +6,27 @@ import (
 	"io/ioutil"
 
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/liangrog/vault"
 	"github.com/spf13/cobra"
+)
+
+var (
+	vaultDecryptShort = i18n.T("Decrypt vault encrypted files.")
+
+	vaultDecryptLong = templates.LongDesc(i18n.T(`
+		Decrypt vault encrypted files. 'CFCTL_VAULT_PASSWORD'
+		and 'CFCTL_VAULT_PASSWORD_FILE' environment variables 
+		can be used to replace '--vault-password' and 
+		'--vault-password-file' flags.`))
+
+	vaultDecryptExample = templates.Examples(i18n.T(`
+		# Decrypt multiple files
+		$ cfctl vault decrypt file1 file2 file3
+
+		# Decrypt using password file
+		$ cfctl vault decrypt file1 --vault-password-file path/to/file`))
 )
 
 // Register sub commands
@@ -20,9 +39,10 @@ func init() {
 // cmd: encrypt
 func getCmdVaultDecrypt() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "decrypt",
-		Short: "decrypt given content",
-		Long:  `decrypt given content following ansible-vault spec`,
+		Use:     "decrypt",
+		Short:   vaultDecryptShort,
+		Long:    vaultDecryptLong,
+		Example: fmt.Sprintf(vaultDecryptExample),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return errors.New("Missing file name in command argument")

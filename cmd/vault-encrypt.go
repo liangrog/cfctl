@@ -2,11 +2,35 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/liangrog/cfctl/pkg/utils"
+	"github.com/liangrog/cfctl/pkg/utils/i18n"
+	"github.com/liangrog/cfctl/pkg/utils/templates"
 	"github.com/liangrog/vault"
 	"github.com/spf13/cobra"
+)
+
+var (
+	vaultEncryptShort = i18n.T("Encrypt file using ansible-vault encryption.")
+
+	vaultEncryptLong = templates.LongDesc(i18n.T(`
+		Encrypt file using ansible-vault encryption. 'CFCTL_VAULT_PASSWORD'
+		and 'CFCTL_VAULT_PASSWORD_FILE' environment variables 
+		can be used to replace '--vault-password' and 
+		'--vault-password-file' flags.`))
+
+	vaultEncryptExample = templates.Examples(i18n.T(`
+		# Encrypt multiple
+		$ cfctl vault encrypt file1 file2 file3
+
+		# Encrypt using environment value
+		$ export CFCTL_VAULT_PASSWORD=xxxx
+		$ cfctl vault encrypt filename
+
+		# Encrypt using password file
+		$ cfctl vault encrypt filename --vault-password-file path/to/password/file`))
 )
 
 // Register sub commands
@@ -19,9 +43,10 @@ func init() {
 // cmd: encrypt
 func getCmdVaultEncrypt() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "encrypt",
-		Short: "Encrypt given content",
-		Long:  `Encrypt given content following ansible-vault spec`,
+		Use:     "encrypt",
+		Short:   vaultEncryptShort,
+		Long:    vaultEncryptLong,
+		Example: fmt.Sprintf(vaultEncryptExample),
 		Args: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return errors.New(utils.MsgFormat("Missing file name in command argument", utils.MessageTypeError))
