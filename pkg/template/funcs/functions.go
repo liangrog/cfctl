@@ -51,8 +51,19 @@ func GetEnv(key string) string {
 }
 
 // Parse cloudformation stack output
-func GetStackOutputs(name, key string) (string, error) {
+func GetStackOutputs(params ...string) (string, error) {
+	if len(params) < 2 {
+		return "", errors.New("Missing stack name or output key.")
+	}
+
+	name := params[0]
+	key := params[1]
+
 	c := ctlaws.NewStack(cf.New(ctlaws.AWSSess))
+	if len(params) == 3 {
+		c = ctlaws.NewStack(cf.New(ctlaws.GetSessionWithProfile(params[2])))
+	}
+
 	stack, err := c.DescribeStack(name)
 	if err != nil {
 		return "", err

@@ -36,6 +36,21 @@ var (
 	)
 )
 
+// Return a session by given a profile name
+func GetSessionWithProfile(profile string) *session.Session {
+	return session.Must(
+		session.NewSessionWithOptions(
+			session.Options{
+				Profile: profile,
+				Config: aws.Config{
+					HTTPClient: GetHttpClient(),
+				},
+				SharedConfigState: session.SharedConfigEnable,
+			},
+		),
+	)
+}
+
 // Get http client for aws calls
 func GetHttpClient() *http.Client {
 	// Setup tool specific https proxy if available

@@ -42,6 +42,6 @@ Apart from standard template functions provided by [go template](https://golang.
 - <b>env:</b> "{{ env ENV_VARIABLE_NAME}}" will parsing environment variabe.
 - <b>awsAccountId:</b> "{{ awsAccountId }}" will get your AWS account ID for your current IAM user.
 - <b>hash:</b> "{{ printf "%s" "test" | hash }}" will hash the string "test" using md5
-- <b>stackOutput:</b> '{{ stackOutput "stack-name" "value name in the outputs"}}'` will get the value of the output. Note: There can not be a space between value name and the last double curly bracket.
+- <b>stackOutput:</b> '{{ stackOutput "stack-name" "value name in the outputs"}}' will get the value of the output. Note: There can not be a space between value name and the last double curly bracket. There is an optional third value as specify profile name for cross-account query. For example, '{{ stackOutput "foo" "key" "cross"}}' will be using profile name "cross" to get output value for "key" from stack "foo".
 - <b>tpl:</b> '{{ tpl "rds/mysql.yaml" }}' will upload the template to S3 bucket then returns the url.
 

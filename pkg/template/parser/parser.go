@@ -55,8 +55,8 @@ func doubleParse(s string, funcMap template.FuncMap, kv map[string]string) (byte
 func SearchDependancy(s string, kv map[string]string) ([]string, error) {
 	var p []string
 
-	funcParentStack := func(name, key string) string {
-		p = append(p, name)
+	funcParentStack := func(params ...string) string {
+		p = append(p, params[0])
 		return ""
 	}
 
