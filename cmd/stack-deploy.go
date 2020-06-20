@@ -295,6 +295,29 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 		// Line seperator for each stack
 		fmt.Println("")
 
+		// Load template
+		dat, err := ioutil.ReadFile(dc.GetTplPath(stc.Tpl))
+		if err != nil {
+			return err
+		}
+
+		// Dry run
+		if dry {
+			if _, err := stack.ValidateTemplate(dat, ""); err != nil {
+				return err
+			} else {
+				utils.InfoPrint(
+					fmt.Sprintf(
+						"[ stack | validate ] %s\t%s",
+						stc.Name,
+						"ok",
+					),
+				)
+			}
+
+			continue
+		}
+
 		// If there is parameters provided
 		params := make(map[string]string)
 		// If no parameters and only parsing parameters
@@ -336,28 +359,6 @@ func deployStacks(f, env, named, tags string, vaultPass []string, dry, paramOnly
 				continue
 			}
 
-		}
-
-		dat, err := ioutil.ReadFile(dc.GetTplPath(stc.Tpl))
-		if err != nil {
-			return err
-		}
-
-		// Dry run
-		if dry {
-			if _, err := stack.ValidateTemplate(dat, ""); err != nil {
-				return err
-			} else {
-				utils.InfoPrint(
-					fmt.Sprintf(
-						"[ stack | validate ] %s\t%s",
-						stc.Name,
-						"ok",
-					),
-				)
-			}
-
-			continue
 		}
 
 		// Create or update the stack.
