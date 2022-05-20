@@ -6,7 +6,5 @@ func tagPkgStamp(tags map[string]string) map[string]string {
 		tags = make(map[string]string)
 	}
 
-	tags["CreatedBy"] = "cfctl"
-
 	return tags
 }
