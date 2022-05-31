@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "v1.1.0"
+const Version = "v1.1.2"
 
 const (
 	// cfctl config file
