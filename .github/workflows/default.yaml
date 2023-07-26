@@ -15,7 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: 1.20
       - name: Check out code
         uses: actions/checkout@v1
       # This step uses GitHub's hello-world-javascript-action: https://github.com/actions/hello-world-javascript-action

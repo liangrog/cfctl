@@ -27,8 +27,8 @@ linux:
 	GOOS=linux GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-linux-amd64
 
 darwin:
-	GOOS=darwin GOARCH=386 go build -v ${LDFLAGS} -o ./target/${APPNAME}-darwin-386
 	GOOS=darwin GOARCH=amd64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-darwin-amd64
+	GOOS=darwin GOARCH=arm64 go build -v ${LDFLAGS} -o ./target/${APPNAME}-darwin-arm64
 
 windows:
 	GOOS=windows GOARCH=386 go build -v ${LDFLAGS} -o ./target/${APPNAME}-windows-386.exe
